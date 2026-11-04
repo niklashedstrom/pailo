@@ -1,0 +1,50 @@
+schema: spec-driven
+
+context: |
+  Language: sv
+  All artifacts must be written in sv.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+  Code, identifiers and commit messages are in English.
+
+  Projekt: Pailo är en AI-appbyggare för icke-tekniska privatpersoner och hushåll i Sverige.
+  Användaren beskriver ett vardagsproblem, en AI-intervju leder fram till en app som byggs av
+  fasta byggstenar (Data, Vyer, Inmatning, Personer, Tid). Källan till sanning är README.md och docs/.
+
+  Principer som varje ändring måste följa:
+  - Ingen fri kodgenerering. En app är en JSON-appbeskrivning validerad av Zod (packages/schema).
+    AI:n producerar bara JSON Patch mot beskrivningen; varje patch valideras och sparas som ny
+    version i app_versions. Varje ändring kan ångras.
+  - En runtime (apps/runtime, Vite + React + TS, PWA på Vercel) renderar alla appar.
+  - All appdata i en generisk records-tabell (jsonb). Nya appar kräver aldrig nya tabeller.
+  - RLS per hushåll på varje tabell, bevisat med pgTAP-tester i CI.
+  - Ingen körbar användarkod, ingen rå HTML, länkar saneras.
+  - Claude-nyckeln når aldrig klienten. AI-anrop via Supabase Edge Functions med kvot,
+    hastighetsgräns och kostnadslogg per hushåll före anropet.
+  - Inga tekniska ord i gränssnittet. Gränssnittet är på svenska.
+
+  Stack: npm workspaces-monorepo (apps/runtime, packages/schema, supabase/), Vitest, oxlint,
+  TypeScript, Supabase (Postgres, Auth, Edge Functions, EU), GitHub Actions.
+  Arbetssätt: en OpenSpec-ändring per milstolpe M0–M5 (docs/06-roadmap.md). "Klart när" är
+  definitionen av klart. Små leveranser, main ska alltid vara grön.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always state what is out of scope
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing

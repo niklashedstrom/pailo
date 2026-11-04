@@ -1,0 +1,23 @@
+{
+  "name": "pailo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @pailo/runtime",
+    "build": "npm run build -w @pailo/runtime",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "openspec": "openspec",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@fission-ai/openspec": "^1.16.0"
+  }
+}
