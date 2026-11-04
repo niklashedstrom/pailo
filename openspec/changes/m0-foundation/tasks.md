@@ -16,7 +16,7 @@
 
 - [x] 3.1 GitHub Actions-jobb för lint, typkontroll, tester och bygge
 - [x] 3.2 GitHub Actions-jobb som applicerar migreringar och kör pgTAP
-- [ ] 3.3 Öppna pull request och verifiera att båda CI-jobben är gröna
+- [x] 3.3 Öppna pull request och verifiera att båda CI-jobben är gröna
 
 ## 4. OpenSpec
 
