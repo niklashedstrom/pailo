@@ -24,8 +24,8 @@
 
 ## 5. Molntjänster (kräver ägarens godkännande)
 
-- [ ] 5.1 Skapa eget Supabase-projekt i EU-region på gratisnivån; verifiera att projektet syns i Supabase med region i EU
-- [ ] 5.2 Koppla repot till Vercel (gratisnivå) med `apps/runtime` som rotkatalog; verifiera att pull requesten får en förhandsvisningsadress
+- [x] 5.1 Skapa eget Supabase-projekt i EU-region på gratisnivån; verifiera att projektet syns i Supabase med region i EU (projekt `pailo`, ref `edtgepobtmyogdmaphfm`, eu-north-1)
+- [x] 5.2 Koppla repot till Vercel (gratisnivå), byggkonfiguration i `vercel.json`; verifiera att pull requesten får en förhandsvisningsadress
 - [ ] 5.3 Peka pailo.se till Vercel via DNS hos simply.com; verifiera att https://pailo.se visar startsidan
 
 ## 6. Klart när
