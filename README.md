@@ -8,7 +8,7 @@ Första användaren är mamma, och hennes första app är familjens matschema.
 
 ## Status
 
-Planering klar. Nästa steg är M0, se [docs/06-roadmap.md](docs/06-roadmap.md).
+M0 (grunden) pågår, se [openspec/changes/m0-foundation](openspec/changes/m0-foundation/tasks.md) och [docs/06-roadmap.md](docs/06-roadmap.md).
 
 ## Dokumentation
 
@@ -26,3 +26,17 @@ Planering klar. Nästa steg är M0, se [docs/06-roadmap.md](docs/06-roadmap.md).
 ## Stack
 
 Vite + React + TypeScript på Vercel, Supabase (Postgres, Auth, RLS, Edge Functions, EU-region), GitHub Actions, Claude API för intervju och byggtjänst.
+
+## Utveckling
+
+Kräver Node 22+ och Docker (för lokal Supabase).
+
+```sh
+npm install
+npm run dev          # runtime på http://localhost:5173
+npm run lint
+npm run typecheck
+npm test
+supabase start       # lokal databas på portarna 55420–55429
+supabase test db     # pgTAP-tester
+```
