@@ -26,11 +26,11 @@ Fas 1 delas i sex milstolpar, var och en med ett tydligt klart-kriterium. Stegen
 
 ### M1 · Appschemat (vecka 1–2)
 
-- [ ] Definiera appbeskrivning v0 i TypeScript med Zod: samlingar och fält, vyer, inmatning, personer och roller, påminnelser, tema
-- [ ] Lägg till `schemaVersion` och en migreringsfunktion, så att gamla appar fungerar när schemat växer
-- [ ] Handskriv Drop som JSON-beskrivning
-- [ ] Handskriv mammas matschema som JSON-beskrivning
-- [ ] Enhetstester för validering, både giltiga och ogiltiga beskrivningar
+- [x] Definiera appbeskrivning v0 i TypeScript med Zod: samlingar och fält, vyer, inmatning, personer och roller, påminnelser, tema
+- [x] Lägg till `schemaVersion` och en migreringsfunktion, så att gamla appar fungerar när schemat växer
+- [x] Handskriv Drop som JSON-beskrivning
+- [x] Handskriv mammas matschema som JSON-beskrivning
+- [x] Enhetstester för validering, både giltiga och ogiltiga beskrivningar
 
 **Klart när:** båda exemplen validerar och ett medvetet trasigt exempel avvisas.
 
