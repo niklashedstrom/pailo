@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "name": "Drop",
+  "description": "Skicka länkar och anteckningar mellan mobilen och datorn.",
+  "icon": "bookmark",
+  "collections": [
+    {
+      "id": "drops",
+      "name": "Sparat",
+      "access": "add",
+      "fields": [
+        { "id": "url", "label": "Länk", "type": "link" },
+        { "id": "title", "label": "Titel", "type": "text", "required": true },
+        { "id": "note", "label": "Anteckning", "type": "text", "multiline": true },
+        {
+          "id": "tags",
+          "label": "Etiketter",
+          "type": "choice",
+          "multiple": true,
+          "options": [
+            { "value": "las-senare", "label": "Läs senare" },
+            { "value": "recept", "label": "Recept" },
+            { "value": "kopa", "label": "Köpa" }
+          ]
+        }
+      ]
+    }
+  ],
+  "views": [
+    {
+      "id": "senaste",
+      "name": "Senaste",
+      "type": "list",
+      "collection": "drops",
+      "fields": ["title", "url", "tags"]
+    }
+  ],
+  "inputs": [
+    { "id": "spara", "name": "Spara något", "type": "form", "collection": "drops" },
+    {
+      "id": "dela",
+      "name": "Dela till Drop",
+      "type": "share",
+      "collection": "drops",
+      "map": { "url": "url", "title": "title", "text": "note" }
+    },
+    {
+      "id": "bokmarke",
+      "name": "Spara i Drop",
+      "type": "bookmarklet",
+      "collection": "drops",
+      "map": { "url": "url", "title": "title" }
+    }
+  ],
+  "people": { "others": [] },
+  "reminders": [],
+  "theme": { "preset": "strict", "palette": "slate", "density": "compact" }
+}
