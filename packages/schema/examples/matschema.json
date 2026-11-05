@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "name": "Matschema",
+  "description": "Veckans mat för familjen, med en bank av rätter att välja från.",
+  "icon": "food",
+  "collections": [
+    {
+      "id": "ratter",
+      "name": "Rätter",
+      "access": "edit",
+      "fields": [
+        { "id": "namn", "label": "Namn", "type": "text", "required": true },
+        {
+          "id": "sort",
+          "label": "Sort",
+          "type": "choice",
+          "options": [
+            { "value": "kott", "label": "Kött" },
+            { "value": "fisk", "label": "Fisk" },
+            { "value": "vego", "label": "Vego" },
+            { "value": "soppa", "label": "Soppa" }
+          ]
+        },
+        { "id": "recept", "label": "Recept", "type": "link" },
+        { "id": "bild", "label": "Bild", "type": "image" },
+        { "id": "anteckning", "label": "Anteckning", "type": "text", "multiline": true }
+      ]
+    },
+    {
+      "id": "maltider",
+      "name": "Måltider",
+      "access": "edit",
+      "fields": [
+        { "id": "datum", "label": "Dag", "type": "date", "required": true },
+        {
+          "id": "maltid",
+          "label": "Måltid",
+          "type": "choice",
+          "options": [
+            { "value": "lunch", "label": "Lunch" },
+            { "value": "middag", "label": "Middag" }
+          ]
+        },
+        { "id": "ratt", "label": "Rätt", "type": "reference", "collection": "ratter", "required": true },
+        { "id": "lagar", "label": "Vem lagar", "type": "person" }
+      ]
+    }
+  ],
+  "views": [
+    {
+      "id": "veckan",
+      "name": "Veckan",
+      "type": "calendar",
+      "collection": "maltider",
+      "dateField": "datum",
+      "range": "week",
+      "fields": ["maltid", "ratt", "lagar"]
+    },
+    {
+      "id": "ratter",
+      "name": "Rätter",
+      "type": "cards",
+      "collection": "ratter",
+      "fields": ["namn", "bild", "sort"],
+      "sort": { "field": "namn", "direction": "asc" }
+    }
+  ],
+  "inputs": [
+    { "id": "planera", "name": "Planera en måltid", "type": "form", "collection": "maltider" },
+    { "id": "ny-ratt", "name": "Ny rätt", "type": "form", "collection": "ratter" },
+    {
+      "id": "dela-recept",
+      "name": "Spara recept",
+      "type": "share",
+      "collection": "ratter",
+      "map": { "url": "recept", "title": "namn" }
+    }
+  ],
+  "people": {
+    "others": [
+      { "id": "barn-1", "name": "Ella" },
+      { "id": "barn-2", "name": "Leo" }
+    ]
+  },
+  "reminders": [
+    {
+      "id": "planera-veckan",
+      "type": "weekly",
+      "weekday": "sunday",
+      "time": "18:00",
+      "message": "Dags att planera veckans mat"
+    },
+    {
+      "id": "imorgon",
+      "type": "beforeDate",
+      "collection": "maltider",
+      "dateField": "datum",
+      "daysBefore": 1,
+      "time": "17:00",
+      "message": "Kolla vad som ska lagas imorgon"
+    }
+  ],
+  "theme": { "preset": "playful", "palette": "sage", "font": "rounded", "radius": "large" }
+}
