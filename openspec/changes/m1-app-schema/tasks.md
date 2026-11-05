@@ -31,7 +31,7 @@
 
 ## 6. Klart när
 
-- [ ] 6.1 Kör `npm run lint`, `npm run typecheck`, `npm test` och `npm run build` i hela repot, öppna pull request och verifiera att CI är grön – båda exemplen validerar och det trasiga avvisas
+- [x] 6.1 Kör `npm run lint`, `npm run typecheck`, `npm test` och `npm run build` i hela repot, öppna pull request och verifiera att CI är grön – båda exemplen validerar och det trasiga avvisas
 
 ## Workflow follow-up
 
