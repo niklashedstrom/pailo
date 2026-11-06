@@ -32,7 +32,9 @@ feature → spec-writer → builder ⇄ [security · ux · ui · code] → appro
    kebab slug in English: `004-weekly-menu-view`. Then:
    - `mkdir -p factory/jobs/<id>` and write `factory/jobs/<id>/request.md` with the raw
      feature text (the only file you write in a job folder, apart from `rework-<n>.md`).
-   - `git fetch origin && git worktree add -b factory/<id> .worktrees/<id> origin/main`
+   - `git fetch --prune origin && git worktree add -b factory/<id> .worktrees/<id> origin/main`
+     (`--prune` drops stale remote branches, so an old branch named `factory` can't block
+     `factory/<id>`.)
    - Add the job to `board.json` with `stage: "spec"`.
 2. **Spec.** Spawn `factory-spec-writer`. Wait. If `spec.md` starts with `BLOCKED`, set
    stage `needs-human` with the reason and stop. Otherwise stage `build`.
@@ -70,8 +72,12 @@ feature → spec-writer → builder ⇄ [security · ux · ui · code] → appro
      `supabase db push` against production, so a human always makes that call.
    - CI green and no migrations → `gh pr merge <pr> --squash --delete-branch`, then step 10
      with stage `merged`.
-10. **Clean up** after a merge: `git worktree remove .worktrees/<id>`,
-    `git branch -D factory/<id>`, `git fetch origin`. Keep `factory/jobs/<id>/`.
+10. **Clean up** after a merge. Run `gh pr merge` from the main working tree, not the
+    worktree. `gh pr merge --delete-branch` often removes the worktree and local branch itself,
+    so only remove what is still there:
+    `git worktree list | grep -q .worktrees/<id> && git worktree remove .worktrees/<id>`,
+    `git branch --list factory/<id> | grep -q . && git branch -D factory/<id>`, then
+    `git fetch --prune origin`. Keep `factory/jobs/<id>/`.
 
 Tell the user one line per stage change ("004 · review round 1: security PASS, ux CHANGES …").
 Finish with the job's final stage, the PR link, and for `needs-human` the reason plus
