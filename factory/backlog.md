@@ -14,7 +14,7 @@ Pågår redan som jobb `001-edit-display-name`: låta varje medlem ändra sitt e
 
 ## Hushållet (databasen klarar det redan sedan M2, sidan saknas)
 
-- [ ] Markera ditt eget namn med "(du)" i medlemslistan på hushållssidan
+- [x] Markera ditt eget namn med "(du)" i medlemslistan på hushållssidan → 002-mark-yourself-in-members
 - [ ] Låt en administratör byta namn på hushållet från hushållssidan
 - [ ] Låt en administratör se hushållets öppna inbjudningar (när de skapades och när de går ut) och återkalla en av dem
 - [ ] Låt en administratör ta bort en annan medlem ur hushållet, med en bekräftelse på sidan först
