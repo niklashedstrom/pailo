@@ -1,0 +1,400 @@
+<title>Pailo-läget</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; a milestone rail across the top, then "now", milestones, open decisions, numbers. */
+:root {
+  --bg: #f6f6f1;
+  --surface: #ffffff;
+  --fg: #1d2420;
+  --muted: #5d6660;
+  --line: #dcdfd6;
+  --accent: #3d6b4f;
+  --accent-soft: #e3ece4;
+  --done: #3d6b4f;
+  --next: #b5672a;
+  --next-soft: #f6e8db;
+  --todo: #9aa39c;
+  --warn: #a3471f;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151a17; --surface: #1d2420; --fg: #e8ebe5; --muted: #a2aca5; --line: #323b35;
+    --accent: #8fc3a0; --accent-soft: #24352a; --done: #8fc3a0; --next: #e3a06b; --next-soft: #3a2b1f;
+    --todo: #6b756e; --warn: #ec9a76; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151a17; --surface: #1d2420; --fg: #e8ebe5; --muted: #a2aca5; --line: #323b35;
+  --accent: #8fc3a0; --accent-soft: #24352a; --done: #8fc3a0; --next: #e3a06b; --next-soft: #3a2b1f;
+  --todo: #6b756e; --warn: #ec9a76; color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.55 var(--body);
+}
+.wrap {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding-block: 2.5rem 4rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 2.75rem;
+}
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2rem, 5vw, 2.75rem); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+.eyebrow {
+  font: 500 0.75rem/1 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.muted { color: var(--muted); }
+section { display: grid; gap: 1rem; }
+
+/* Header */
+header { display: grid; gap: 0.75rem; }
+.lede { max-width: 62ch; font-size: 1.05rem; }
+.updated { font-size: 0.9rem; color: var(--muted); }
+
+/* Milestone rail */
+.rail {
+  list-style: none; margin: 0.5rem 0 0; padding: 0;
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.5rem;
+}
+.rail li { display: grid; gap: 0.35rem; min-width: 0; }
+.rail .bar { height: 8px; border-radius: 4px; background: var(--line); }
+.rail .done .bar { background: var(--done); }
+.rail .next .bar { background: repeating-linear-gradient(90deg, var(--next) 0 10px, var(--next-soft) 10px 14px); }
+.rail .code { font: 500 0.95rem/1 var(--mono); }
+.rail .name { font-size: 0.85rem; color: var(--muted); line-height: 1.3; }
+.rail .done .code { color: var(--done); }
+.rail .next .code { color: var(--next); }
+
+/* Now panel */
+.now {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.25rem 1.25rem 1.35rem;
+  display: grid; gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+.now > div { display: grid; gap: 0.4rem; align-content: start; min-width: 0; }
+.now ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.3rem; }
+
+/* Pills */
+.pill {
+  display: inline-block; font: 500 0.72rem/1 var(--mono);
+  padding: 0.3rem 0.5rem; border-radius: 999px; white-space: nowrap;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.pill.done { background: var(--accent-soft); color: var(--done); }
+.pill.next { background: var(--next-soft); color: var(--next); }
+.pill.todo { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+.pill.warn { background: var(--next-soft); color: var(--warn); }
+
+/* Milestones */
+.milestones { display: grid; gap: 0.6rem; }
+details.ms {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+}
+details.ms[open] { padding-bottom: 0.9rem; }
+details.ms summary {
+  list-style: none; cursor: pointer;
+  display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: 0.75rem; align-items: center;
+  padding: 0.85rem 1rem;
+}
+details.ms summary::-webkit-details-marker { display: none; }
+.ms .code { font: 500 1rem/1 var(--mono); color: var(--muted); }
+.ms.is-done .code { color: var(--done); }
+.ms.is-next .code { color: var(--next); }
+.ms .title { display: grid; gap: 0.15rem; min-width: 0; }
+.ms .title span { font-size: 0.88rem; color: var(--muted); }
+.ms .body { padding: 0 1rem 0 4.75rem; display: grid; gap: 0.6rem; }
+.ms ul.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+.ms ul.items li { display: grid; grid-template-columns: 1.1rem minmax(0, 1fr); gap: 0.4rem; }
+.ms ul.items li::before { content: "○"; color: var(--todo); }
+.ms ul.items li.x::before { content: "●"; color: var(--done); }
+.ms .gate { font-size: 0.92rem; border-left: 3px solid var(--line); padding-left: 0.75rem; }
+.ms .links { font-size: 0.9rem; color: var(--muted); }
+
+/* Backlog table */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 34rem; font-size: 0.95rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: none; }
+th { font: 500 0.72rem/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+td:first-child { width: 7.5rem; }
+td .why { display: block; color: var(--muted); font-size: 0.88rem; margin-top: 0.2rem; }
+
+/* Phases */
+.phases { display: grid; gap: 0.6rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+.phase { border-top: 3px solid var(--line); padding-top: 0.6rem; display: grid; gap: 0.3rem; align-content: start; }
+.phase.current { border-top-color: var(--next); }
+.phase p { font-size: 0.92rem; }
+
+/* Numbers */
+.numbers { display: grid; gap: 0.6rem; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
+.num { display: grid; gap: 0.1rem; }
+.num b { font: 700 1.6rem/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.num span { font-size: 0.88rem; color: var(--muted); }
+
+.linklist { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; padding: 0; margin: 0; list-style: none; }
+
+@media (max-width: 34rem) {
+  .rail { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 0.9rem; }
+  .ms .body { padding-left: 1rem; }
+  details.ms summary { grid-template-columns: 2.5rem minmax(0, 1fr); }
+  details.ms summary .pill { grid-column: 2; justify-self: start; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  details.ms summary { transition: background-color 120ms ease; }
+}
+details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; }
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Pailo · fas 1 · Kärnan</p>
+  <h1>Läget just nu</h1>
+  <p class="lede">Grunden, appschemat och hushållen med inloggning är klara och finns på <a href="https://pailo.se">pailo.se</a>. Nästa milstolpe är M3: att faktiskt köra Drop och matschemat i appen. Först behövs ett beslut om egen e-posttjänst.</p>
+  <p class="updated">Uppdaterad 6 november 2026 · tre av sex milstolpar klara</p>
+
+  <ol class="rail" aria-label="Milstolpar i fas 1">
+    <li class="done"><div class="bar"></div><span class="code">M0</span><span class="name">Grunden</span></li>
+    <li class="done"><div class="bar"></div><span class="code">M1</span><span class="name">Appschemat</span></li>
+    <li class="done"><div class="bar"></div><span class="code">M2</span><span class="name">Data och behörighet</span></li>
+    <li class="next"><div class="bar"></div><span class="code">M3</span><span class="name">Runtime</span></li>
+    <li><div class="bar"></div><span class="code">M4</span><span class="name">Byggtjänsten</span></li>
+    <li><div class="bar"></div><span class="code">M5</span><span class="name">Intervju och design</span></li>
+  </ol>
+</header>
+
+<section aria-labelledby="now-h">
+  <h2 id="now-h">Nu och härnäst</h2>
+  <div class="now">
+    <div>
+      <p class="eyebrow">Väntar på dig</p>
+      <ul>
+        <li>Slå ihop <a href="https://github.com/niklashedstrom/pailo/pull/5">PR #5</a> (arkiverar M0 och M2)</li>
+        <li>Välj egen e-posttjänst, se öppna beslut nedan</li>
+      </ul>
+    </div>
+    <div>
+      <p class="eyebrow">Nästa steg</p>
+      <ul>
+        <li>Starta M3 med <code>/opsx:propose</code></li>
+        <li>Rendera vyer och formulär från de handskrivna exemplen</li>
+      </ul>
+    </div>
+    <div>
+      <p class="eyebrow">Klart när (M3)</p>
+      <p>Drop och matschemat körs i appen från de handskrivna beskrivningarna och delas mellan två konton.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="ms-h">
+  <h2 id="ms-h">Milstolpar i fas 1</h2>
+  <div class="milestones">
+
+    <details class="ms is-done">
+      <summary><span class="code">M0</span><span class="title"><h3>Grunden</h3><span>Monorepo, CI, Supabase, Vercel, OpenSpec</span></span><span class="pill done">Klar 6 nov</span></summary>
+      <div class="body">
+        <ul class="items">
+          <li class="x">Monorepo: <code>apps/runtime</code>, <code>packages/schema</code>, <code>supabase/</code></li>
+          <li class="x">OpenSpec med projektbeskrivning</li>
+          <li class="x">Eget Supabase-projekt i Stockholm</li>
+          <li class="x">Vercel med förhandsvisning per pull request, pailo.se och www med https</li>
+          <li class="x">GitHub Actions: lint, typkontroll, tester, migreringar</li>
+        </ul>
+        <p class="gate">Klart när: en tom app deployas från <code>main</code> och CI är grön.</p>
+        <p class="links"><a href="https://github.com/niklashedstrom/pailo/pull/1">PR #1</a> · krav i <code>openspec/specs/delivery-pipeline</code></p>
+      </div>
+    </details>
+
+    <details class="ms is-done">
+      <summary><span class="code">M1</span><span class="title"><h3>Appschemat</h3><span>Appbeskrivningen i Zod med versioner och exempel</span></span><span class="pill done">Klar 5 nov</span></summary>
+      <div class="body">
+        <ul class="items">
+          <li class="x">Appbeskrivning v1: samlingar och fält, vyer, inmatning, personer, påminnelser, tema</li>
+          <li class="x"><code>schemaVersion</code> och migrering från v0</li>
+          <li class="x">Drop som handskriven beskrivning</li>
+          <li class="x">Mammas matschema som handskriven beskrivning</li>
+          <li class="x">Tester för giltiga och ogiltiga beskrivningar</li>
+        </ul>
+        <p class="gate">Klart när: båda exemplen validerar och ett medvetet trasigt exempel avvisas.</p>
+        <p class="links"><a href="https://github.com/niklashedstrom/pailo/pull/2">PR #2</a> · <a href="https://github.com/niklashedstrom/pailo/pull/3">PR #3</a> · krav i <code>openspec/specs/app-description</code></p>
+      </div>
+    </details>
+
+    <details class="ms is-done">
+      <summary><span class="code">M2</span><span class="title"><h3>Data och behörighet</h3><span>Hushåll, inloggning, inbjudan, isolering</span></span><span class="pill done">Klar 6 nov</span></summary>
+      <div class="body">
+        <ul class="items">
+          <li class="x">Sju tabeller, all appdata i <code>records</code></li>
+          <li class="x">Behörighet per hushåll på varje tabell, plus per samling (redigera, lägga till, läsa)</li>
+          <li class="x">Tester som visar att hushåll A och B är helt isolerade</li>
+          <li class="x">Inloggning med länk i mejlet, inbjudan som gäller 3 dagar och en gång</li>
+          <li class="x">Databasen rullas ut till molnet automatiskt efter sammanslagning</li>
+        </ul>
+        <p class="gate">Klart när: två testkonton i olika hushåll är helt isolerade, bevisat av tester.</p>
+        <p class="links"><a href="https://github.com/niklashedstrom/pailo/pull/4">PR #4</a> · krav i <code>openspec/specs/households</code>, <code>app-data</code>, <code>sign-in</code>, <code>database-rollout</code></p>
+      </div>
+    </details>
+
+    <details class="ms is-next" open>
+      <summary><span class="code">M3</span><span class="title"><h3>Runtime</h3><span>Apparna körs på riktigt</span></span><span class="pill next">Nästa</span></summary>
+      <div class="body">
+        <ul class="items">
+          <li>Vyerna lista, kort, kalender och översikt från en beskrivning</li>
+          <li>Formulär från fälten, med skapa, ändra och ta bort</li>
+          <li>Tema: palett, typsnitt, avstånd, rundning, täthet och tre stilar</li>
+          <li>Installerbar på mobilen</li>
+          <li>Dela-meny och bokmärkesknapp med återkallbar nyckel</li>
+          <li>Påminnelser via mejl, push om tiden räcker</li>
+        </ul>
+        <p class="gate">Klart när: Drop och matschemat körs från de handskrivna beskrivningarna och delas mellan två konton.</p>
+      </div>
+    </details>
+
+    <details class="ms">
+      <summary><span class="code">M4</span><span class="title"><h3>Byggtjänsten</h3><span>AI ändrar appen, varje ändring kan ångras</span></span><span class="pill todo">Planerad</span></summary>
+      <div class="body">
+        <ul class="items">
+          <li>Claude föreslår ändringar som JSON Patch mot beskrivningen</li>
+          <li>Varje ändring valideras och sparas som ny version</li>
+          <li>Ångra och återställ till tidigare version</li>
+          <li>Kvot, hastighetsgränser, kostnadslogg per hushåll, nödbroms</li>
+          <li>Önskemål som byggstenarna inte klarar sparas</li>
+          <li>20 testproblem i vardagsspråk med mätt kostnad</li>
+        </ul>
+        <p class="gate">Klart när: minst 90 % av testproblemen ger en giltig app och kostnaden per byggsamtal är uppmätt.</p>
+      </div>
+    </details>
+
+    <details class="ms">
+      <summary><span class="code">M5</span><span class="title"><h3>Intervju och design</h3><span>Från vardagsproblem till färdig app</span></span><span class="pill todo">Planerad</span></summary>
+      <div class="body">
+        <ul class="items">
+          <li>Chatt med styrda frågor</li>
+          <li>Förslag som valbara kort, 2–3 per app</li>
+          <li>Tre stilförhandsvisningar och justering med ord</li>
+          <li>Ändringar i samtal med versionslista och ångra</li>
+          <li>Ärligt besked när något inte går, med närmaste alternativ</li>
+        </ul>
+        <p class="gate">Klart när (grind för fas 1): Drop och matschemat byggs från noll utan handpåläggning. Sedan bygger mamma sitt matschema utan att du rör tangentbordet.</p>
+      </div>
+    </details>
+
+  </div>
+</section>
+
+<section aria-labelledby="bl-h">
+  <h2 id="bl-h">Öppna beslut och backlog</h2>
+  <p class="muted">Sådant som inte hör till en enskild milstolpes uppgifter men som inte får glömmas.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Läge</th><th>Vad</th><th>När</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="pill warn">Beslut</span></td>
+          <td>Egen e-posttjänst för inloggningsmejl
+            <span class="why">Supabase egen e-post når bara ditt Supabase-team och skickar få mejl. På gratisnivån går mejlen inte heller att få på svenska utan egen tjänst.</span></td>
+          <td>Före M3:s klart när</td>
+        </tr>
+        <tr>
+          <td><span class="pill next">Risk</span></td>
+          <td>Inloggningslänken måste öppnas i samma webbläsare
+            <span class="why">Öppnar mamma mejlet i en app med egen webbläsare fungerar länken inte. Alternativ: logga in med en kod från mejlet.</span></td>
+          <td>Med e-postbeslutet</td>
+        </tr>
+        <tr>
+          <td><span class="pill todo">Senare</span></td>
+          <td>Uppgradera Supabase CLI till v3 och testa om databasen fortfarande kraschar
+            <span class="why">Lokal och CI-version kraschar vid nekad funktionsbehörighet, så funktionerna får anropas av alla och avvisar själva.</span></td>
+          <td>När det passar</td>
+        </tr>
+        <tr>
+          <td><span class="pill todo">Senare</span></td>
+          <td>Eget Supabase-projekt för förhandsvisningar
+            <span class="why">I dag delar förhandsvisningar och pailo.se samma databas.</span></td>
+          <td>Före riktiga användare</td>
+        </tr>
+        <tr>
+          <td><span class="pill todo">Senare</span></td>
+          <td>Radera konto och hushåll (GDPR)
+            <span class="why">Sista administratören kan inte lämna, så radering behöver ett eget flöde.</span></td>
+          <td>Före fas 2</td>
+        </tr>
+        <tr>
+          <td><span class="pill todo">Senare</span></td>
+          <td>Prisnivåer, medlemsgräns, provperiod
+            <span class="why">Medvetet utanför M2. Kvoter för AI kommer i M4.</span></td>
+          <td>Fas 3</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="ph-h">
+  <h2 id="ph-h">Faserna</h2>
+  <div class="phases">
+    <div class="phase current">
+      <p class="eyebrow">nov–dec 2026</p>
+      <h3>1 · Kärnan</h3>
+      <p>M0–M5. Grind: mamma bygger sitt matschema själv.</p>
+    </div>
+    <div class="phase">
+      <p class="eyebrow">jan 2027</p>
+      <h3>2 · Fem testare</h3>
+      <p>Mamma och fyra till. Används appen vecka 3? Bygger någon en andra?</p>
+    </div>
+    <div class="phase">
+      <p class="eyebrow">feb–apr 2027</p>
+      <h3>3 · Betalning och öppning</h3>
+      <p>Nya byggstenar, provperiod och abonnemang. Grind: första betalande hushåll.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="nu-h">
+  <h2 id="nu-h">I siffror</h2>
+  <div class="numbers">
+    <div class="num"><b>140</b><span>databastester, varav 49 för isolering</span></div>
+    <div class="num"><b>109</b><span>tester i appen och schemat</span></div>
+    <div class="num"><b>7</b><span>tabeller med behörighet per hushåll</span></div>
+    <div class="num"><b>6</b><span>migreringar i molnet</span></div>
+  </div>
+</section>
+
+<section aria-labelledby="ln-h">
+  <h2 id="ln-h">Länkar</h2>
+  <ul class="linklist">
+    <li><a href="https://pailo.se">pailo.se</a></li>
+    <li><a href="https://github.com/niklashedstrom/pailo">GitHub</a></li>
+    <li><a href="https://github.com/niklashedstrom/pailo/pulls">Pull requests</a></li>
+    <li><a href="https://supabase.com/dashboard/project/edtgepobtmyogdmaphfm">Supabase</a></li>
+    <li><a href="https://vercel.com/hedan96-4231s-projects/pailo">Vercel</a></li>
+  </ul>
+  <p class="muted">Källan till sanning är <code>docs/06-roadmap.md</code> och <code>openspec/</code> i repot. Den här sidan uppdateras efter varje milstolpe.</p>
+</section>
+
+</div>
