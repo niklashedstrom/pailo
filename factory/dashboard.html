@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pailo factory</title>
+<style>
+  :root {
+    --bg: #fafaf7; --surface: #ffffff; --ink: #1f2328; --muted: #6b7280; --line: #e5e4df;
+    --pass: #1a7f37; --pass-bg: #dcf5e3; --changes: #b35900; --changes-bg: #fdebd6;
+    --pending: #8a8f98; --pending-bg: #eef0f2; --human: #c2410c; --human-bg: #fff4ed;
+    --accent: #2f5bd3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141517; --surface: #1d1f22; --ink: #e8e8e6; --muted: #9aa0a8; --line: #2e3135;
+      --pass: #5fd07e; --pass-bg: #18311f; --changes: #f0a35a; --changes-bg: #3a2814;
+      --pending: #8a8f98; --pending-bg: #26292d; --human: #ff8a4c; --human-bg: #3a2216;
+      --accent: #7fa2ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 system-ui, -apple-system, sans-serif; }
+  header { display: flex; align-items: baseline; gap: 12px; padding: 20px 24px 8px; flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em; }
+  header .meta { color: var(--muted); font-size: 12px; }
+  .human { margin: 8px 24px 0; }
+  .human:empty { display: none; }
+  .human h2, .col h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+  .human h2 { color: var(--human); }
+  .human .cards { display: flex; gap: 12px; flex-wrap: wrap; }
+  .board { display: grid; grid-template-columns: repeat(6, minmax(180px, 1fr)); gap: 12px;
+    padding: 16px 24px 32px; overflow-x: auto; }
+  .col { min-height: 120px; }
+  .col .count { font-weight: 400; margin-left: 4px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 12px; margin-bottom: 10px; cursor: pointer; width: 100%; text-align: left;
+    font: inherit; color: inherit; transition: border-color .15s, transform .15s; }
+  .card:hover, .card:focus-visible { border-color: var(--accent); outline: none; }
+  .human .card { width: 280px; border: 1.5px solid var(--human); background: var(--human-bg); }
+  .card .id { font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+  .card .title { font-weight: 600; margin: 2px 0 6px; }
+  .card .reason { font-size: 12px; color: var(--human); margin-top: 6px; }
+  .card .pr { font-size: 12px; margin-top: 6px; }
+  .card .pr a { color: var(--accent); }
+  .round { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+  .round .n { font-size: 10px; color: var(--muted); width: 18px; }
+  .chip { font-size: 10px; padding: 1px 6px; border-radius: 99px; font-weight: 600;
+    background: var(--pending-bg); color: var(--pending); }
+  .chip.PASS { background: var(--pass-bg); color: var(--pass); }
+  .chip.CHANGES { background: var(--changes-bg); color: var(--changes); }
+  .chip.pending { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  .empty { color: var(--muted); font-size: 12px; padding: 4px 0; }
+  .decision { font-size: 11px; font-weight: 700; margin-top: 4px; }
+  .decision.APPROVE { color: var(--pass); } .decision.ESCALATE { color: var(--human); }
+  /* reader */
+  .scrim { position: fixed; inset: 0; background: rgb(0 0 0 / .25); display: none; }
+  .scrim.open { display: block; }
+  aside { position: fixed; top: 0; right: 0; bottom: 0; width: min(720px, 100%);
+    background: var(--surface); border-left: 1px solid var(--line); transform: translateX(100%);
+    transition: transform .2s ease; display: flex; flex-direction: column; }
+  aside.open { transform: none; }
+  aside .top { padding: 16px 20px 0; border-bottom: 1px solid var(--line); }
+  aside .top .row { display: flex; justify-content: space-between; align-items: center; }
+  aside h2 { margin: 0; font-size: 16px; }
+  aside .close { border: 0; background: none; font-size: 20px; color: var(--muted); cursor: pointer; }
+  .tabs { display: flex; gap: 2px; overflow-x: auto; margin-top: 12px; }
+  .tabs button { border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px;
+    padding: 6px 10px; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+  .tabs button.on { color: var(--ink); border-color: var(--accent); }
+  .doc { padding: 16px 20px 40px; overflow-y: auto; }
+  .doc h1 { font-size: 20px; } .doc h2 { font-size: 16px; margin-top: 20px; } .doc h3 { font-size: 14px; }
+  .doc pre { background: var(--bg); border: 1px solid var(--line); padding: 10px; border-radius: 8px;
+    overflow-x: auto; font-size: 12px; }
+  .doc code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .doc :not(pre) > code { background: var(--bg); padding: 1px 4px; border-radius: 4px; }
+  .doc blockquote { margin: 0; padding-left: 12px; border-left: 3px solid var(--line); color: var(--muted); }
+  .doc a { color: var(--accent); }
+  .doc .verdict { display: inline-block; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+  .doc .verdict.PASS, .doc .verdict.APPROVE { background: var(--pass-bg); color: var(--pass); }
+  .doc .verdict.CHANGES, .doc .verdict.ESCALATE, .doc .verdict.BLOCKED { background: var(--changes-bg); color: var(--changes); }
+  @media (max-width: 700px) {
+    header, .human { padding-left: 16px; padding-right: 16px; margin-left: 0; margin-right: 0; }
+    .board { grid-template-columns: 1fr; padding: 16px; }
+    .human .card { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Pailo factory</h1>
+  <span class="meta" id="meta">loading board.json…</span>
+</header>
+<section class="human" id="human"></section>
+<main class="board" id="board"></main>
+<div class="scrim" id="scrim"></div>
+<aside id="reader" aria-hidden="true">
+  <div class="top">
+    <div class="row"><h2 id="r-title"></h2><button class="close" id="r-close" aria-label="Close">×</button></div>
+    <div class="tabs" id="r-tabs"></div>
+  </div>
+  <div class="doc" id="r-doc"></div>
+</aside>
+<script>
+const STAGES = [
+  ["spec", "Spec"], ["build", "Build"], ["review", "Review"],
+  ["approval", "Approval"], ["pr", "PR · CI"], ["merged", "Merged"],
+];
+const REVIEWERS = ["security", "ux", "ui", "code"];
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const safeUrl = (u) => /^https?:\/\//i.test(u) ? u : null;
+
+let board = { jobs: [] };
+let openJob = null;
+
+function roundRow(n, reviews) {
+  const chips = REVIEWERS.map((r) => {
+    const v = reviews?.[r] ?? "pending";
+    return `<span class="chip ${esc(v)}" title="${r}: ${esc(v)}">${r}</span>`;
+  }).join("");
+  return `<div class="round"><span class="n">R${n}</span>${chips}</div>`;
+}
+
+function card(job) {
+  const rounds = [...(job.history ?? []).map((h) => roundRow(h.round, h.reviews))];
+  const inReview = job.round && !(job.history ?? []).some((h) => h.round === job.round);
+  if (inReview) rounds.push(roundRow(job.round, job.reviews));
+  const decision = job.decision
+    ? `<div class="decision ${esc(job.decision)}">${esc(job.decision)}</div>` : "";
+  const reason = job.stage === "needs-human" && job.reason
+    ? `<div class="reason">${esc(job.reason)}</div>` : "";
+  const url = safeUrl(job.prUrl);
+  const pr = url ? `<div class="pr"><a href="${esc(url)}" target="_blank" rel="noopener">PR #${esc(job.pr)}</a></div>` : "";
+  return `<button class="card" data-id="${esc(job.id)}">
+    <div class="id">${esc(job.id)}</div>
+    <div class="title">${esc(job.title || job.id)}</div>
+    ${rounds.join("")}${decision}${reason}${pr}
+  </button>`;
+}
+
+function render() {
+  const jobs = board.jobs ?? [];
+  const human = jobs.filter((j) => j.stage === "needs-human");
+  $("human").innerHTML = human.length
+    ? `<h2>Needs human · ${human.length}</h2><div class="cards">${human.map(card).join("")}</div>`
+    : "";
+  $("board").innerHTML = STAGES.map(([key, label]) => {
+    const inCol = jobs.filter((j) => j.stage === key);
+    return `<div class="col"><h2>${label}<span class="count">${inCol.length || ""}</span></h2>
+      ${inCol.map(card).join("") || '<div class="empty">—</div>'}</div>`;
+  }).join("");
+  document.querySelectorAll(".card").forEach((el) =>
+    el.addEventListener("click", () => openReader(el.dataset.id)));
+}
+
+async function poll() {
+  try {
+    const res = await fetch("board.json", { cache: "no-store" });
+    if (res.status === 404) { board = { jobs: [] }; }
+    else if (!res.ok) throw new Error(res.status);
+    else board = await res.json();
+    $("meta").textContent = `${board.jobs.length} job(s) · updated ${new Date().toLocaleTimeString()}`;
+    render();
+  } catch (e) {
+    $("meta").textContent = `could not read board.json (${e.message}). Serve this folder with npm run factory:board`;
+  }
+}
+
+/* ---------- reader ---------- */
+
+async function fetchText(path) {
+  try {
+    const r = await fetch(path, { cache: "no-store" });
+    return r.ok ? await r.text() : null;
+  } catch { return null; }
+}
+
+async function openReader(id) {
+  const job = (board.jobs ?? []).find((j) => j.id === id);
+  if (!job) return;
+  openJob = id;
+  const base = `jobs/${encodeURIComponent(id)}/`;
+  const names = ["request.md", "spec.md", "build.md"];
+  for (let n = 1; n <= (job.round ?? 0); n++)
+    for (const r of REVIEWERS) names.push(`round-${n}/review-${r}.md`);
+  for (let n = 1; n <= 5; n++) names.push(`rework-${n}.md`);
+  names.push("decision.md");
+  const files = (await Promise.all(names.map(async (name) => [name, await fetchText(base + name)])))
+    .filter(([, text]) => text !== null);
+  if (openJob !== id) return;
+  $("r-title").textContent = job.title || job.id;
+  $("r-tabs").innerHTML = files.map(([name], i) =>
+    `<button data-i="${i}" class="${i === 0 ? "on" : ""}">${esc(name.replace(".md", ""))}</button>`).join("")
+    || '<span class="empty">No files yet</span>';
+  const show = (i) => {
+    $("r-tabs").querySelectorAll("button").forEach((b) => b.classList.toggle("on", +b.dataset.i === i));
+    $("r-doc").innerHTML = files[i] ? md(files[i][1]) : "";
+  };
+  $("r-tabs").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => show(+b.dataset.i)));
+  show(files.findIndex(([n]) => n === "decision.md") >= 0 ? files.length - 1 : 0);
+  $("reader").classList.add("open"); $("scrim").classList.add("open");
+  $("reader").setAttribute("aria-hidden", "false");
+}
+
+function closeReader() {
+  openJob = null;
+  $("reader").classList.remove("open"); $("scrim").classList.remove("open");
+  $("reader").setAttribute("aria-hidden", "true");
+}
+$("r-close").addEventListener("click", closeReader);
+$("scrim").addEventListener("click", closeReader);
+document.addEventListener("keydown", (e) => e.key === "Escape" && closeReader());
+
+/* Small markdown renderer. Everything is HTML-escaped first, links only allow http(s). */
+function inline(s) {
+  return esc(s)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>")
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, text, url) => {
+      const u = safeUrl(url.replace(/&amp;/g, "&"));
+      return u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${text}</a>` : text;
+    });
+}
+
+function md(src) {
+  const lines = src.replace(/\r/g, "").split("\n");
+  const out = [];
+  let i = 0;
+  const first = lines[0] ?? "";
+  const v = first.match(/^(VERDICT:\s*)?(PASS|CHANGES|APPROVE|ESCALATE|BLOCKED)\b(.*)$/);
+  if (v) { out.push(`<p><span class="verdict ${v[2]}">${esc(v[2])}</span>${inline(v[3])}</p>`); i = 1; }
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^```/.test(line)) {
+      const buf = []; i++;
+      while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]);
+      i++; out.push(`<pre><code>${esc(buf.join("\n"))}</code></pre>`); continue;
+    }
+    const h = line.match(/^(#{1,4})\s+(.*)$/);
+    if (h) { out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); i++; continue; }
+    if (/^\s*([-*]|\d+\.)\s+/.test(line)) {
+      const ordered = /^\s*\d+\./.test(line); const items = [];
+      while (i < lines.length && /^\s*([-*]|\d+\.)\s+/.test(lines[i]))
+        items.push(lines[i++].replace(/^\s*([-*]|\d+\.)\s+/, "")
+          .replace(/^\[ \]\s*/, "☐ ").replace(/^\[x\]\s*/i, "☑ "));
+      const tag = ordered ? "ol" : "ul";
+      out.push(`<${tag}>${items.map((t) => `<li>${inline(t)}</li>`).join("")}</${tag}>`); continue;
+    }
+    if (/^>\s?/.test(line)) {
+      const buf = [];
+      while (i < lines.length && /^>\s?/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, ""));
+      out.push(`<blockquote>${inline(buf.join(" "))}</blockquote>`); continue;
+    }
+    if (!line.trim()) { i++; continue; }
+    const buf = [];
+    while (i < lines.length && lines[i].trim() && !/^(#{1,4}\s|```|>|\s*([-*]|\d+\.)\s)/.test(lines[i])) buf.push(lines[i++]);
+    out.push(`<p>${inline(buf.join(" "))}</p>`);
+  }
+  return out.join("\n");
+}
+
+poll();
+setInterval(poll, 2000);
+</script>
+</body>
+</html>
