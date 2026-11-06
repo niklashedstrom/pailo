@@ -34,8 +34,8 @@
 
 ## 6. Klart när
 
-- [ ] 6.1 Kör `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` och `supabase test db`, öppna pull request och verifiera att CI är grön – två testkonton i olika hushåll är helt isolerade, bevisat av tester
-- [ ] 6.2 Efter sammanslagning: verifiera att `deploy-database` lyckades och att molnprojektets migreringshistorik innehåller M2:s migreringar
+- [x] 6.1 Kör `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` och `supabase test db`, öppna pull request och verifiera att CI är grön – två testkonton i olika hushåll är helt isolerade, bevisat av tester
+- [x] 6.2 Efter sammanslagning: verifiera att `deploy-database` lyckades och att molnprojektets migreringshistorik innehåller M2:s migreringar
 
 ## Workflow follow-up
 

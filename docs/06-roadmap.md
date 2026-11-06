@@ -16,11 +16,11 @@ Fas 1 delas i sex milstolpar, var och en med ett tydligt klart-kriterium. Stegen
 
 ### M0 · Grunden (helg 1)
 
-- [ ] Skapa repo som monorepo: `apps/runtime`, `packages/schema`, `supabase/`
-- [ ] Initiera OpenSpec och skriv projektbeskrivningen utifrån planen
-- [ ] Skapa eget Supabase-projekt i EU-region
-- [ ] Koppla Vercel med förhandsvisning per pull request
-- [ ] GitHub Actions: lint, typkontroll, tester och Supabase-migreringar
+- [x] Skapa repo som monorepo: `apps/runtime`, `packages/schema`, `supabase/`
+- [x] Initiera OpenSpec och skriv projektbeskrivningen utifrån planen
+- [x] Skapa eget Supabase-projekt i EU-region
+- [x] Koppla Vercel med förhandsvisning per pull request
+- [x] GitHub Actions: lint, typkontroll, tester och Supabase-migreringar
 
 **Klart när:** en tom app deployas från `main` och CI är grön.
 
@@ -36,11 +36,11 @@ Fas 1 delas i sex milstolpar, var och en med ett tydligt klart-kriterium. Stegen
 
 ### M2 · Data och behörighet (vecka 2–3)
 
-- [ ] Tabeller: `households`, `members`, `apps`, `app_versions`, `records` (jsonb), `invites`, `wishes`
-- [ ] All appdata i en generisk `records`-tabell med jsonb, så att nya appar aldrig kräver nya tabeller
-- [ ] RLS-policyer per hushåll på varje tabell
-- [ ] pgTAP-tester i CI som bevisar att hushåll A inte kan läsa eller skriva B:s data
-- [ ] Inloggning med magisk länk och inbjudan till hushållet med tidsbegränsad länk
+- [x] Tabeller: `households`, `members`, `apps`, `app_versions`, `records` (jsonb), `invites`, `wishes`
+- [x] All appdata i en generisk `records`-tabell med jsonb, så att nya appar aldrig kräver nya tabeller
+- [x] RLS-policyer per hushåll på varje tabell
+- [x] pgTAP-tester i CI som bevisar att hushåll A inte kan läsa eller skriva B:s data
+- [x] Inloggning med magisk länk och inbjudan till hushållet med tidsbegränsad länk
 
 **Klart när:** två testkonton i olika hushåll är helt isolerade, bevisat av tester.
 
