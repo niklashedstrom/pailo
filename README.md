@@ -8,7 +8,7 @@ Första användaren är mamma, och hennes första app är familjens matschema.
 
 ## Status
 
-M1 (appschemat) är klart, se [openspec/specs/app-description](openspec/specs/app-description/spec.md). M0 väntar bara på domänen pailo.se. Plan: [docs/06-roadmap.md](docs/06-roadmap.md).
+M1 (appschemat) och M2 (hushåll, inloggning och behörighet) är klara, se [openspec/specs](openspec/specs). M0 väntar bara på domänen pailo.se. Plan: [docs/06-roadmap.md](docs/06-roadmap.md).
 
 ## Dokumentation
 

@@ -36,11 +36,11 @@ Fas 1 delas i sex milstolpar, var och en med ett tydligt klart-kriterium. Stegen
 
 ### M2 · Data och behörighet (vecka 2–3)
 
-- [ ] Tabeller: `households`, `members`, `apps`, `app_versions`, `records` (jsonb), `invites`, `wishes`
-- [ ] All appdata i en generisk `records`-tabell med jsonb, så att nya appar aldrig kräver nya tabeller
-- [ ] RLS-policyer per hushåll på varje tabell
-- [ ] pgTAP-tester i CI som bevisar att hushåll A inte kan läsa eller skriva B:s data
-- [ ] Inloggning med magisk länk och inbjudan till hushållet med tidsbegränsad länk
+- [x] Tabeller: `households`, `members`, `apps`, `app_versions`, `records` (jsonb), `invites`, `wishes`
+- [x] All appdata i en generisk `records`-tabell med jsonb, så att nya appar aldrig kräver nya tabeller
+- [x] RLS-policyer per hushåll på varje tabell
+- [x] pgTAP-tester i CI som bevisar att hushåll A inte kan läsa eller skriva B:s data
+- [x] Inloggning med magisk länk och inbjudan till hushållet med tidsbegränsad länk
 
 **Klart när:** två testkonton i olika hushåll är helt isolerade, bevisat av tester.
 
