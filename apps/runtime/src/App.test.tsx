@@ -94,9 +94,7 @@ describe('the household', () => {
     expect(await screen.findByRole('heading', { name: 'Sommarstugan' })).toBeInTheDocument()
     expect(api.listMembers).toHaveBeenLastCalledWith('h-2')
   })
-})
 
-describe('changing your own name', () => {
   it('lets a member change their own name', async () => {
     const { api } = fakeApi({ userId: 'u-2', households: [{ ...familjen, role: 'member' }], members })
     render(<App api={api} storage={memoryStorage()} />)
