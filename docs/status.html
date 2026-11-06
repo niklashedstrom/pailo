@@ -199,6 +199,7 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
     <div>
       <p class="eyebrow">Nästa steg</p>
       <ul>
+        <li>Kör fabrikens kö med <code>/factory next</code> (jobb 001 är påbörjat)</li>
         <li>Starta M3 med <code>/opsx:propose</code></li>
         <li>Rendera vyer och formulär från de handskrivna exemplen</li>
       </ul>
@@ -327,12 +328,6 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
         </tr>
         <tr>
           <td><span class="pill todo">Senare</span></td>
-          <td>Uppgradera Supabase CLI till v3 och testa om databasen fortfarande kraschar
-            <span class="why">Lokal och CI-version kraschar vid nekad funktionsbehörighet, så funktionerna får anropas av alla och avvisar själva.</span></td>
-          <td>När det passar</td>
-        </tr>
-        <tr>
-          <td><span class="pill todo">Senare</span></td>
           <td>Eget Supabase-projekt för förhandsvisningar
             <span class="why">I dag delar förhandsvisningar och pailo.se samma databas.</span></td>
           <td>Före riktiga användare</td>
@@ -349,6 +344,27 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
             <span class="why">Medvetet utanför M2. Kvoter för AI kommer i M4.</span></td>
           <td>Fas 3</td>
         </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="fx-h">
+  <h2 id="fx-h">Fabrikens kö</h2>
+  <p class="muted">Små jobb som fabriken bygger ett i taget med <code>/factory next</code>: spec, bygge, fyra granskningar, godkännande och pull request. Kön finns i <code>factory/backlog.md</code>, läget per jobb på <code>npm run factory:board</code>.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Läge</th><th>Jobb</th><th>Område</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill next">Pågår</span></td><td>Ändra sitt eget namn i hushållet <span class="why">Jobb 001</span></td><td>Hushållet</td></tr>
+        <tr><td><span class="pill todo">Kö</span></td><td>"(du)" vid ditt eget namn i medlemslistan</td><td>Hushållet</td></tr>
+        <tr><td><span class="pill todo">Kö</span></td><td>Administratören byter namn på hushållet</td><td>Hushållet</td></tr>
+        <tr><td><span class="pill todo">Kö</span></td><td>Se och återkalla öppna inbjudningar</td><td>Hushållet</td></tr>
+        <tr><td><span class="pill todo">Kö</span></td><td>Ta bort en medlem, med bekräftelse</td><td>Hushållet</td></tr>
+        <tr><td><span class="pill todo">Kö</span></td><td>Göra en medlem till administratör och ta tillbaka det</td><td>Hushållet</td></tr>
+        <tr><td><span class="pill todo">Kö</span></td><td>Lämna hushållet själv</td><td>Hushållet</td></tr>
+        <tr><td><span class="pill todo">Kö</span></td><td>Skicka och se önskemål</td><td>Hushållet</td></tr>
+        <tr><td><span class="pill todo">Kö</span></td><td>Supabase CLI v3 och kontroll av databaskraschen <span class="why">Om kraschen är borta stängs funktionerna för utloggade. Ändrar databasen, så du godkänner sammanslagningen.</span></td><td>Teknik</td></tr>
       </tbody>
     </table>
   </div>
