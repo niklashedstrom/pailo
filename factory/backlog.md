@@ -6,11 +6,9 @@ OpenSpec-ändringar med `/opsx:propose`, inte här.
 
 Format: `- [ ] <beskrivning i vardagsspråk>`. Fabriken bockar av raden och skriver jobb-id efter.
 
-<!-- Exempel:
-- [ ] Visa hushållets medlemmar med namn i stället för e-postadress på hushållssidan
--->
+Exempel (utan kryssruta, så att `/factory next` aldrig tar det): "Visa hushållets medlemmar med namn i stället för e-postadress på hushållssidan".
 
-Pågår redan som jobb `001-edit-display-name`: låta varje medlem ändra sitt eget namn.
+Klart som jobb `001-edit-display-name` ([#7](https://github.com/niklashedstrom/pailo/pull/7)): varje medlem kan ändra sitt eget namn.
 
 ## Hushållet (databasen klarar det redan sedan M2, sidan saknas)
 
