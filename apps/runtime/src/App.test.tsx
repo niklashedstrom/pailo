@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -73,6 +73,13 @@ describe('first time', () => {
   })
 })
 
+/** The member list row that shows the given name. */
+function rowWith(name: string) {
+  const row = screen.getAllByRole('listitem').find((item) => within(item).queryByText(name) !== null)
+  if (row === undefined) throw new Error(`No member row with ${name}`)
+  return row
+}
+
 describe('the household', () => {
   it('shows its name and members', async () => {
     const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
@@ -118,6 +125,27 @@ describe('the household', () => {
     expect(screen.queryByLabelText('Ditt namn')).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Namnet är sparat.')
     expect(screen.getByRole('button', { name: 'Ändra namn' })).toHaveFocus()
+    expect(rowWith('Pappa')).toHaveTextContent('(du)')
+  })
+
+  it("marks the person's own name with (du)", async () => {
+    const { api } = fakeApi({ userId: 'u-2', households: [{ ...familjen, role: 'member' }], members })
+    render(<App api={api} storage={memoryStorage()} />)
+
+    await screen.findByText('Niklas')
+    expect(within(rowWith('Mamma')).getByText('(du)')).toBeInTheDocument()
+    expect(rowWith('Niklas')).not.toHaveTextContent('(du)')
+    expect(screen.getAllByText('(du)')).toHaveLength(1)
+  })
+
+  it('marks the signed-in person, not the admin', async () => {
+    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
+    render(<App api={api} storage={memoryStorage()} />)
+
+    await screen.findByText('Niklas')
+    expect(rowWith('Niklas')).toHaveTextContent('Niklas(du)administratör')
+    expect(rowWith('Mamma')).not.toHaveTextContent('(du)')
+    expect(screen.getAllByText('(du)')).toHaveLength(1)
   })
 
   it('says so when the name could not be saved', async () => {

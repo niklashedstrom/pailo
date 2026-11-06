@@ -55,6 +55,7 @@ export default function HouseholdPage({ api, currentUserId, households, selected
           {members.map((member) => (
             <li key={member.userId}>
               {member.displayName}
+              {member.userId === currentUserId && <span className="tag">(du)</span>}
               {member.role === 'admin' && <span className="tag">administratör</span>}
               {member.userId === currentUserId && (
                 <EditName
