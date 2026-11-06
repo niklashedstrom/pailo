@@ -16,11 +16,11 @@ Fas 1 delas i sex milstolpar, var och en med ett tydligt klart-kriterium. Stegen
 
 ### M0 · Grunden (helg 1)
 
-- [ ] Skapa repo som monorepo: `apps/runtime`, `packages/schema`, `supabase/`
-- [ ] Initiera OpenSpec och skriv projektbeskrivningen utifrån planen
-- [ ] Skapa eget Supabase-projekt i EU-region
-- [ ] Koppla Vercel med förhandsvisning per pull request
-- [ ] GitHub Actions: lint, typkontroll, tester och Supabase-migreringar
+- [x] Skapa repo som monorepo: `apps/runtime`, `packages/schema`, `supabase/`
+- [x] Initiera OpenSpec och skriv projektbeskrivningen utifrån planen
+- [x] Skapa eget Supabase-projekt i EU-region
+- [x] Koppla Vercel med förhandsvisning per pull request
+- [x] GitHub Actions: lint, typkontroll, tester och Supabase-migreringar
 
 **Klart när:** en tom app deployas från `main` och CI är grön.
 
