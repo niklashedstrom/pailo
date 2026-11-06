@@ -29,8 +29,8 @@
 ## 5. Utrullning till molnet
 
 - [x] 5.1 CI-jobbet `deploy-database` (bara push till `main`, efter `database`, egen concurrency utan avbrott, `supabase link` + `supabase db push`); verifiera att arbetsflödet är giltigt och att jobbet hoppas över i pull request
-- [ ] 5.2 Ägaren lägger in `SUPABASE_ACCESS_TOKEN` och `SUPABASE_DB_PASSWORD` som GitHub-hemligheter; verifiera med `gh secret list`
-- [ ] 5.3 Auth-inställningar i molnprojektet (Site URL `https://pailo.se`, redirect-adresser) och `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` i Vercel för production och preview; verifiera med `vercel env ls` och att den byggda koden inte innehåller någon hemlig nyckel
+- [x] 5.2 Ägaren lägger in `SUPABASE_ACCESS_TOKEN` och `SUPABASE_DB_PASSWORD` som GitHub-hemligheter; verifiera med `gh secret list`
+- [x] 5.3 Auth-inställningar i molnprojektet (Site URL `https://pailo.se`, redirect-adresser) och `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` i Vercel för production och preview; verifiera med `vercel env ls` och att den byggda koden inte innehåller någon hemlig nyckel
 
 ## 6. Klart när
 
