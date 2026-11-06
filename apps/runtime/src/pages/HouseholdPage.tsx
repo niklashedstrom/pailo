@@ -7,10 +7,19 @@ interface Props {
   households: Household[]
   selectedId: string
   onSelect: (id: string) => void
+  onRenamed: (householdId: string, name: string) => void
   onSignOut: () => void
 }
 
-export default function HouseholdPage({ api, currentUserId, households, selectedId, onSelect, onSignOut }: Props) {
+export default function HouseholdPage({
+  api,
+  currentUserId,
+  households,
+  selectedId,
+  onSelect,
+  onRenamed,
+  onSignOut,
+}: Props) {
   const household = households.find((h) => h.id === selectedId) ?? households[0]
   const [loaded, setLoaded] = useState<{ householdId: string; members: Member[] | 'failed' } | undefined>(
     undefined,
@@ -33,6 +42,18 @@ export default function HouseholdPage({ api, currentUserId, households, selected
   return (
     <>
       <h1>{household.name}</h1>
+      {/* Shown to admins for convenience; the database is what stops anyone else. */}
+      {household.role === 'admin' && (
+        <EditName
+          key={household.id}
+          openLabel="Byt namn på hushållet"
+          fieldLabel="Hushållets namn"
+          failedText="Det gick inte att byta namn. Försök igen."
+          currentName={household.name}
+          save={(name) => api.renameHousehold(household.id, name)}
+          onSaved={(name) => onRenamed(household.id, name)}
+        />
+      )}
 
       {households.length > 1 && (
         <p>
@@ -60,9 +81,12 @@ export default function HouseholdPage({ api, currentUserId, households, selected
               {member.userId === currentUserId && (
                 <EditName
                   key={household.id}
-                  api={api}
-                  householdId={household.id}
+                  openLabel="Ändra namn"
+                  fieldLabel="Ditt namn"
+                  failedText="Det gick inte att spara namnet. Försök igen."
+                  autoComplete="nickname"
                   currentName={member.displayName}
+                  save={(name) => api.updateDisplayName(household.id, name)}
                   onSaved={() => setMembersVersion((n) => n + 1)}
                 />
               )}
@@ -83,22 +107,28 @@ export default function HouseholdPage({ api, currentUserId, households, selected
 const MAX_NAME_LENGTH = 80
 
 interface EditNameProps {
-  api: PailoApi
-  householdId: string
+  /** Text on the button that opens the form. */
+  openLabel: string
+  fieldLabel: string
+  failedText: string
+  autoComplete?: string
   currentName: string
-  onSaved: () => void
+  /** Receives the trimmed name; throws when it could not be saved. */
+  save: (name: string) => Promise<void>
+  onSaved: (name: string) => void
 }
 
 /**
- * Lets a person change their own name in this household. Only shown on their
- * own row for convenience; the database is what stops changing anyone else's.
+ * A button that opens a small form for changing a name: a person's own name
+ * in the household, or (for admins) the household's name. Where it is shown
+ * is only for convenience; the database is what stops anyone else.
  */
-function EditName({ api, householdId, currentName, onSaved }: EditNameProps) {
+function EditName({ openLabel, fieldLabel, failedText, autoComplete, currentName, save, onSaved }: EditNameProps) {
   const inputId = useId()
   const [name, setName] = useState<string | undefined>(undefined)
   const [state, setState] = useState<'idle' | 'saving' | 'failed' | 'saved'>('idle')
   const openButton = useRef<HTMLButtonElement>(null)
-  // Set when the form closes, so focus goes back to "Ändra namn" instead of being lost.
+  // Set when the form closes, so focus goes back to the open button instead of being lost.
   const returnFocus = useRef(false)
 
   useEffect(() => {
@@ -125,7 +155,7 @@ function EditName({ api, householdId, currentName, onSaved }: EditNameProps) {
             setState('idle')
           }}
         >
-          Ändra namn
+          {openLabel}
         </button>
         {state === 'saved' && (
           <p role="status" className="hint">
@@ -139,28 +169,28 @@ function EditName({ api, householdId, currentName, onSaved }: EditNameProps) {
   const trimmed = name.trim()
   const canSave = trimmed.length > 0 && trimmed.length <= MAX_NAME_LENGTH && state !== 'saving'
 
-  async function save(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault()
     if (!canSave) return
     setState('saving')
     try {
-      await api.updateDisplayName(householdId, trimmed)
+      await save(trimmed)
       setState('saved')
       close()
-      onSaved()
+      onSaved(trimmed)
     } catch {
       setState('failed')
     }
   }
 
   return (
-    <form className="edit-name" onSubmit={save}>
-      <label htmlFor={inputId}>Ditt namn</label>
+    <form className="edit-name" onSubmit={submit}>
+      <label htmlFor={inputId}>{fieldLabel}</label>
       <input
         id={inputId}
         value={name}
         maxLength={MAX_NAME_LENGTH}
-        autoComplete="nickname"
+        autoComplete={autoComplete ?? 'off'}
         enterKeyHint="done"
         autoFocus
         onChange={(event) => {
@@ -176,7 +206,7 @@ function EditName({ api, householdId, currentName, onSaved }: EditNameProps) {
           Avbryt
         </button>
       </div>
-      {state === 'failed' && <p role="alert">Det gick inte att spara namnet. Försök igen.</p>}
+      {state === 'failed' && <p role="alert">{failedText}</p>}
     </form>
   )
 }

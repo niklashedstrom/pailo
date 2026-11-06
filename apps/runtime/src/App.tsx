@@ -95,6 +95,20 @@ export default function App({ api, storage = window.sessionStorage }: Props) {
     api.signOut().catch(() => setLoaded({ key, view: { kind: 'error' } }))
   }, [api, key])
 
+  // Updates the name in place instead of reloading: a reload would pick the
+  // first household, and a new name can change the order.
+  const renamed = useCallback(
+    (householdId: string, name: string) =>
+      setLoaded((current) => {
+        if (current === undefined || current.view.kind !== 'household') return current
+        const households = current.view.households
+          .map((h) => (h.id === householdId ? { ...h, name } : h))
+          .sort((a, b) => a.name.localeCompare(b.name, 'sv'))
+        return { ...current, view: { ...current.view, households } }
+      }),
+    [],
+  )
+
   return <main className="app">{render()}</main>
 
   function render() {
@@ -125,6 +139,7 @@ export default function App({ api, storage = window.sessionStorage }: Props) {
             households={view.households}
             selectedId={view.selectedId}
             onSelect={(id) => setLoaded({ key, view: { ...view, selectedId: id } })}
+            onRenamed={renamed}
             onSignOut={signOut}
           />
         )

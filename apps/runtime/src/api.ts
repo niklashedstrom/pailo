@@ -30,6 +30,8 @@ export interface PailoApi {
   signOut(): Promise<void>
   listHouseholds(): Promise<Household[]>
   createHousehold(name: string): Promise<string>
+  /** Renames a household. Only admins may; anyone else gets an error. */
+  renameHousehold(householdId: string, name: string): Promise<void>
   listMembers(householdId: string): Promise<Member[]>
   /** Changes the signed-in person's own name in one household. */
   updateDisplayName(householdId: string, displayName: string): Promise<void>
@@ -122,6 +124,17 @@ export function supabaseApi(client: SupabaseClient, origin: string): PailoApi {
       const { data, error } = await client.rpc('create_household', { household_name: name })
       if (error) fail('could not create household', error)
       return data as string
+    },
+
+    async renameHousehold(householdId, name) {
+      const { data, error } = await client
+        .from('households')
+        .update({ name: name.trim() })
+        .eq('id', householdId)
+        .select('id')
+      if (error) fail('could not rename household', error)
+      // RLS silently matches no rows for members who are not admin; treat that as a failure.
+      if (!data || data.length === 0) fail('could not rename household', null)
     },
 
     async listMembers(householdId) {

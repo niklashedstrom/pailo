@@ -1,6 +1,6 @@
 -- Households and members: creating, roles, at least one admin, leaving.
 begin;
-select plan(26);
+select plan(28);
 
 select tests.seed_households();
 
@@ -93,6 +93,16 @@ select is(
   (select name from public.households where id = tests.id('household_a')),
   'Familjen A',
   'an admin can rename the household'
+);
+select throws_ok(
+  $$ update public.households set name = '   ' where id = tests.id('household_a') $$,
+  '23514', null,
+  'a household name of only spaces is rejected'
+);
+select throws_ok(
+  $$ update public.households set name = repeat('a', 81) where id = tests.id('household_a') $$,
+  '23514', null,
+  'a household name longer than 80 characters is rejected'
 );
 
 select throws_ok(
