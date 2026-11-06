@@ -40,6 +40,14 @@ Varje medlem i ett hushåll SHALL ha rollen `admin` eller `member`. Medlemmar SH
 - **WHEN** en medlem tittar på hushållets medlemslista
 - **THEN** står "(du)" vid medlemmens eget namn och vid inget annat namn
 
+#### Scenario: Administratör byter namn på hushållet
+- **WHEN** en administratör byter hushållets namn till "Familjen Hedström"
+- **THEN** ser alla medlemmar i hushållet namnet "Familjen Hedström"
+
+#### Scenario: Medlem byter namn på hushållet
+- **WHEN** en medlem som inte är administratör försöker byta hushållets namn
+- **THEN** avvisas ändringen och namnet är oförändrat
+
 ### Requirement: Alltid minst en administratör
 Ett hushåll MUST alltid ha minst en administratör. En ändring som skulle ta bort eller nedgradera den sista administratören MUST avvisas.
 

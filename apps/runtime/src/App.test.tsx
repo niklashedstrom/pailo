@@ -194,6 +194,84 @@ describe('the household', () => {
     expect(screen.queryByLabelText('Ditt namn')).not.toBeInTheDocument()
     expect(api.updateDisplayName).not.toHaveBeenCalled()
   })
+
+  it('lets an admin rename the household', async () => {
+    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
+    render(<App api={api} storage={memoryStorage()} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Byt namn på hushållet' }))
+    const input = screen.getByLabelText('Hushållets namn')
+    expect(input).toHaveValue('Familjen')
+    expect(input).toHaveFocus()
+    await userEvent.clear(input)
+    await userEvent.type(input, '  Familjen Hedström ')
+    await userEvent.click(screen.getByRole('button', { name: 'Spara' }))
+
+    expect(api.renameHousehold).toHaveBeenCalledWith('h-1', 'Familjen Hedström')
+    expect(await screen.findByRole('heading', { name: 'Familjen Hedström' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Hushållets namn')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Namnet är sparat.')
+    expect(screen.getByRole('button', { name: 'Byt namn på hushållet' })).toHaveFocus()
+  })
+
+  it('does not offer renaming to members who are not admin', async () => {
+    const { api } = fakeApi({ userId: 'u-2', households: [{ ...familjen, role: 'member' }], members })
+    render(<App api={api} storage={memoryStorage()} />)
+
+    await screen.findByText('Niklas')
+    expect(screen.queryByRole('button', { name: 'Byt namn på hushållet' })).not.toBeInTheDocument()
+  })
+
+  it('keeps showing the same household after renaming it', async () => {
+    const stugan = { id: 'h-2', name: 'Sommarstugan', role: 'admin' as const }
+    const { api } = fakeApi({ userId: 'u-1', households: [familjen, stugan], members })
+    render(<App api={api} storage={memoryStorage()} />)
+
+    await screen.findByRole('heading', { name: 'Familjen' })
+    await userEvent.click(screen.getByRole('button', { name: 'Byt namn på hushållet' }))
+    const input = screen.getByLabelText('Hushållets namn')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Vårt hem')
+    await userEvent.click(screen.getByRole('button', { name: 'Spara' }))
+
+    expect(await screen.findByRole('heading', { name: 'Vårt hem' })).toBeInTheDocument()
+    const select = screen.getByLabelText('Visa hushåll')
+    expect(select).toHaveValue('h-1')
+    expect(within(select).getAllByRole('option').map((o) => o.textContent)).toEqual(['Sommarstugan', 'Vårt hem'])
+    expect(api.listHouseholds).toHaveBeenCalledTimes(1)
+  })
+
+  it('says so when the household could not be renamed', async () => {
+    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
+    api.renameHousehold.mockRejectedValueOnce(new Error('offline'))
+    render(<App api={api} storage={memoryStorage()} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Byt namn på hushållet' }))
+    const input = screen.getByLabelText('Hushållets namn')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Familjen Hedström')
+    await userEvent.click(screen.getByRole('button', { name: 'Spara' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Det gick inte att byta namn. Försök igen.')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Familjen')
+    expect(screen.queryByRole('heading', { name: 'Familjen Hedström' })).not.toBeInTheDocument()
+  })
+
+  it('does not save an empty household name', async () => {
+    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
+    render(<App api={api} storage={memoryStorage()} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Byt namn på hushållet' }))
+    const input = screen.getByLabelText('Hushållets namn')
+    expect(input).toHaveAttribute('maxLength', '80')
+
+    await userEvent.clear(input)
+    expect(screen.getByRole('button', { name: 'Spara' })).toBeDisabled()
+    await userEvent.type(input, '   ')
+    expect(screen.getByRole('button', { name: 'Spara' })).toBeDisabled()
+    await userEvent.type(input, '{Enter}')
+    expect(api.renameHousehold).not.toHaveBeenCalled()
+  })
 })
 
 describe('inviting', () => {

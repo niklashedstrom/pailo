@@ -35,6 +35,10 @@ export function fakeApi(initial: Partial<FakeState> = {}) {
       state.members[id] = [{ userId: state.userId ?? 'me', displayName: 'Jag', role: 'admin' }]
       return id
     }),
+    renameHousehold: vi.fn(async (householdId: string, name: string) => {
+      // Replace rather than mutate: tests share their initial household objects.
+      state.households = state.households.map((h) => (h.id === householdId ? { ...h, name } : h))
+    }),
     listMembers: vi.fn(async (householdId: string) => state.members[householdId] ?? []),
     updateDisplayName: vi.fn(async (householdId: string, displayName: string) => {
       // Replace rather than mutate: tests share their initial members object.
