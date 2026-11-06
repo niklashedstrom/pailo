@@ -5,9 +5,11 @@ on:
   push:
     branches: [main]
 
+# Superseded pull request runs are cancelled. Runs on main are never
+# cancelled, so a database rollout is never cut off halfway.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   app:
@@ -37,3 +39,25 @@ jobs:
         run: supabase db start
       - name: Run pgTAP tests
         run: supabase test db
+
+  deploy-database:
+    name: Roll out migrations to the cloud project
+    # Only after merge to main, and only when every check passed.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [app, database]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-database
+      cancel-in-progress: false
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.101.0
+      - name: Link the cloud project
+        run: supabase link --project-ref edtgepobtmyogdmaphfm
+      - name: Apply new migrations (stops at the first error)
+        run: supabase db push

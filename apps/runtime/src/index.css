@@ -14,3 +14,90 @@ body {
   margin: 0 auto;
   padding: 3rem 1rem;
 }
+
+h1 {
+  font-size: 1.75rem;
+  margin: 0 0 1rem;
+}
+
+h2 {
+  font-size: 1.15rem;
+  margin: 2rem 0 0.5rem;
+}
+
+form {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+label {
+  font-weight: 600;
+}
+
+input,
+select {
+  font: inherit;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #c8c8c0;
+  border-radius: 0.5rem;
+  background: #fff;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.invite input {
+  width: 100%;
+}
+
+button {
+  font: inherit;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: #3d6b4f;
+  color: #fff;
+  cursor: pointer;
+  justify-self: start;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+button.secondary {
+  background: transparent;
+  color: #3d6b4f;
+  border: 1px solid #3d6b4f;
+  margin-top: 2rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.actions button.secondary {
+  margin-top: 0;
+}
+
+.members {
+  padding-left: 1.25rem;
+}
+
+.tag {
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+  color: #5a5f66;
+}
+
+.hint {
+  color: #5a5f66;
+  font-size: 0.95rem;
+}
+
+[role='alert'] {
+  color: #a3261f;
+}

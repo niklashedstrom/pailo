@@ -40,3 +40,16 @@ npm test
 supabase start       # lokal databas på portarna 55420–55429
 supabase test db     # pgTAP-tester
 ```
+
+### Logga in lokalt
+
+Runtime pratar med den lokala Supabase. Inloggningsmejlen hamnar i Mailpit i stället för att skickas på riktigt.
+
+1. `supabase start` och kopiera `apps/runtime/.env.example` till `apps/runtime/.env.local`. Fyll i nyckeln `Publishable` från `supabase status`.
+2. `npm run dev` och öppna http://localhost:5173.
+3. Ange en påhittad e-postadress, till exempel `anna@exempel.se`.
+4. Öppna Mailpit på http://127.0.0.1:55424 i samma webbläsare och klicka på länken i mejlet "Logga in i Pailo".
+5. Namnge hushållet och tryck på *Skapa inbjudningslänk*. Kopiera länken.
+6. Öppna ett privat fönster (eget konto), klistra in länken, logga in som `bertil@exempel.se` via Mailpit i samma privata fönster. Bertil hamnar direkt i Annas hushåll.
+
+Länken i mejlet måste öppnas i samma webbläsare som bad om den. `supabase db reset` tömmer databasen, även testkonton.
