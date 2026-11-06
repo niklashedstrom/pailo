@@ -15,7 +15,8 @@
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "openspec": "openspec",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "factory:board": "python3 -m http.server 8765 -d factory"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.16.0"
