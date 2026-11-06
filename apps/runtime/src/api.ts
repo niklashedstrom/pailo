@@ -140,12 +140,15 @@ export function supabaseApi(client: SupabaseClient, origin: string): PailoApi {
 
     async updateDisplayName(householdId, displayName) {
       const userId = await requireUserId()
-      const { error } = await client
+      const { data, error } = await client
         .from('members')
         .update({ display_name: displayName.trim() })
         .eq('household_id', householdId)
         .eq('user_id', userId)
+        .select('user_id')
       if (error) fail('could not update display name', error)
+      // RLS can silently match no rows; treat that as a failure, not a save.
+      if (!data || data.length === 0) fail('could not update display name', null)
     },
 
     async createInviteLink(householdId) {

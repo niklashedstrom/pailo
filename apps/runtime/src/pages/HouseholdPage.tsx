@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import type { Household, Member, PailoApi } from '../api'
 
 interface Props {
@@ -93,21 +93,45 @@ interface EditNameProps {
  * own row for convenience; the database is what stops changing anyone else's.
  */
 function EditName({ api, householdId, currentName, onSaved }: EditNameProps) {
+  const inputId = useId()
   const [name, setName] = useState<string | undefined>(undefined)
-  const [state, setState] = useState<'idle' | 'saving' | 'failed'>('idle')
+  const [state, setState] = useState<'idle' | 'saving' | 'failed' | 'saved'>('idle')
+  const openButton = useRef<HTMLButtonElement>(null)
+  // Set when the form closes, so focus goes back to "Ändra namn" instead of being lost.
+  const returnFocus = useRef(false)
+
+  useEffect(() => {
+    if (name === undefined && returnFocus.current) {
+      returnFocus.current = false
+      openButton.current?.focus()
+    }
+  }, [name])
+
+  function close() {
+    returnFocus.current = true
+    setName(undefined)
+  }
 
   if (name === undefined) {
     return (
-      <button
-        type="button"
-        className="link"
-        onClick={() => {
-          setName(currentName)
-          setState('idle')
-        }}
-      >
-        Ändra namn
-      </button>
+      <>
+        <button
+          ref={openButton}
+          type="button"
+          className="link"
+          onClick={() => {
+            setName(currentName)
+            setState('idle')
+          }}
+        >
+          Ändra namn
+        </button>
+        {state === 'saved' && (
+          <p role="status" className="hint">
+            Namnet är sparat.
+          </p>
+        )}
+      </>
     )
   }
 
@@ -120,8 +144,8 @@ function EditName({ api, householdId, currentName, onSaved }: EditNameProps) {
     setState('saving')
     try {
       await api.updateDisplayName(householdId, trimmed)
-      setName(undefined)
-      setState('idle')
+      setState('saved')
+      close()
       onSaved()
     } catch {
       setState('failed')
@@ -130,19 +154,24 @@ function EditName({ api, householdId, currentName, onSaved }: EditNameProps) {
 
   return (
     <form className="edit-name" onSubmit={save}>
-      <label htmlFor="display-name">Ditt namn</label>
+      <label htmlFor={inputId}>Ditt namn</label>
       <input
-        id="display-name"
+        id={inputId}
         value={name}
         maxLength={MAX_NAME_LENGTH}
         autoComplete="nickname"
-        onChange={(event) => setName(event.target.value)}
+        enterKeyHint="done"
+        autoFocus
+        onChange={(event) => {
+          setName(event.target.value)
+          if (state === 'failed') setState('idle')
+        }}
       />
       <div className="actions">
         <button type="submit" disabled={!canSave}>
-          Spara
+          {state === 'saving' ? 'Sparar …' : 'Spara'}
         </button>
-        <button type="button" className="secondary" onClick={() => setName(undefined)}>
+        <button type="button" className="secondary" onClick={close}>
           Avbryt
         </button>
       </div>

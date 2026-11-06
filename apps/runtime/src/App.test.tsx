@@ -107,6 +107,7 @@ describe('the household', () => {
     await userEvent.click(buttons[0])
     const input = screen.getByLabelText('Ditt namn')
     expect(input).toHaveValue('Mamma')
+    expect(input).toHaveFocus()
     await userEvent.clear(input)
     await userEvent.type(input, '  Pappa ')
     await userEvent.click(screen.getByRole('button', { name: 'Spara' }))
@@ -115,6 +116,8 @@ describe('the household', () => {
     expect(await screen.findByText('Pappa')).toBeInTheDocument()
     expect(screen.queryByText('Mamma')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Ditt namn')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Namnet är sparat.')
+    expect(screen.getByRole('button', { name: 'Ändra namn' })).toHaveFocus()
   })
 
   it('says so when the name could not be saved', async () => {
@@ -131,6 +134,9 @@ describe('the household', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Det gick inte att spara namnet. Försök igen.')
     expect(screen.getByText('Mamma')).toBeInTheDocument()
     expect(screen.queryByText('Pappa')).not.toBeInTheDocument()
+
+    await userEvent.type(input, '!')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('does not save an empty name', async () => {
@@ -155,6 +161,7 @@ describe('the household', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Ändra namn' }))
     await userEvent.click(screen.getByRole('button', { name: 'Avbryt' }))
+    expect(screen.getByRole('button', { name: 'Ändra namn' })).toHaveFocus()
 
     expect(screen.queryByLabelText('Ditt namn')).not.toBeInTheDocument()
     expect(api.updateDisplayName).not.toHaveBeenCalled()
