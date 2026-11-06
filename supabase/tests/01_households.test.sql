@@ -1,6 +1,6 @@
 -- Households and members: creating, roles, at least one admin, leaving.
 begin;
-select plan(25);
+select plan(26);
 
 select tests.seed_households();
 
@@ -67,6 +67,11 @@ select is(
   (select display_name from public.members where user_id = tests.id('a_member')),
   'Mamma',
   'the new name is saved'
+);
+select throws_ok(
+  $$ update public.members set display_name = '   ' where user_id = tests.id('a_member') $$,
+  '23514', null,
+  'a name of only spaces is rejected'
 );
 
 update public.households set name = 'Medlemmens namn' where id = tests.id('household_a');

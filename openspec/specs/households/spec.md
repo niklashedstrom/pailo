@@ -28,6 +28,14 @@ Varje medlem i ett hushåll SHALL ha rollen `admin` eller `member`. Medlemmar SH
 - **WHEN** en administratör tar bort en annan medlem
 - **THEN** personen är inte längre medlem och kan inte se hushållets data
 
+#### Scenario: Medlem byter namn
+- **WHEN** en medlem ändrar sitt namn till "Pappa"
+- **THEN** ser hushållets övriga medlemmar namnet "Pappa"
+
+#### Scenario: Ändra någon annans namn
+- **WHEN** en medlem försöker ändra en annan medlems namn
+- **THEN** avvisas ändringen och namnet är oförändrat
+
 ### Requirement: Alltid minst en administratör
 Ett hushåll MUST alltid ha minst en administratör. En ändring som skulle ta bort eller nedgradera den sista administratören MUST avvisas.
 

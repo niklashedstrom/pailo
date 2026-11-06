@@ -17,7 +17,7 @@ type View =
   | { kind: 'error' }
   | { kind: 'invite-problem' }
   | { kind: 'no-household' }
-  | { kind: 'household'; households: Household[]; selectedId: string }
+  | { kind: 'household'; userId: string; households: Household[]; selectedId: string }
 
 /**
  * Signed out → (invite) → no household → household. No router: the only
@@ -72,7 +72,7 @@ export default function App({ api, storage = window.sessionStorage }: Props) {
         show({ kind: 'no-household' })
       } else {
         const selected = households.find((h) => h.id === joined) ?? households[0]
-        show({ kind: 'household', households, selectedId: selected.id })
+        show({ kind: 'household', userId, households, selectedId: selected.id })
       }
     })().catch(() => show({ kind: 'error' }))
 
@@ -121,6 +121,7 @@ export default function App({ api, storage = window.sessionStorage }: Props) {
         return (
           <HouseholdPage
             api={api}
+            currentUserId={view.userId}
             households={view.households}
             selectedId={view.selectedId}
             onSelect={(id) => setLoaded({ key, view: { ...view, selectedId: id } })}

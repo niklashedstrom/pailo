@@ -31,6 +31,8 @@ export interface PailoApi {
   listHouseholds(): Promise<Household[]>
   createHousehold(name: string): Promise<string>
   listMembers(householdId: string): Promise<Member[]>
+  /** Changes the signed-in person's own name in one household. */
+  updateDisplayName(householdId: string, displayName: string): Promise<void>
   /** Returns the full link to send to the person being invited. */
   createInviteLink(householdId: string): Promise<string>
   acceptInvite(token: string): Promise<AcceptInviteResult>
@@ -134,6 +136,16 @@ export function supabaseApi(client: SupabaseClient, origin: string): PailoApi {
         displayName: row.display_name,
         role: row.role,
       }))
+    },
+
+    async updateDisplayName(householdId, displayName) {
+      const userId = await requireUserId()
+      const { error } = await client
+        .from('members')
+        .update({ display_name: displayName.trim() })
+        .eq('household_id', householdId)
+        .eq('user_id', userId)
+      if (error) fail('could not update display name', error)
     },
 
     async createInviteLink(householdId) {

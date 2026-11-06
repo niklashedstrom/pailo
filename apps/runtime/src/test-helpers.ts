@@ -36,6 +36,15 @@ export function fakeApi(initial: Partial<FakeState> = {}) {
       return id
     }),
     listMembers: vi.fn(async (householdId: string) => state.members[householdId] ?? []),
+    updateDisplayName: vi.fn(async (householdId: string, displayName: string) => {
+      // Replace rather than mutate: tests share their initial members object.
+      state.members = {
+        ...state.members,
+        [householdId]: (state.members[householdId] ?? []).map((m) =>
+          m.userId === state.userId ? { ...m, displayName } : m,
+        ),
+      }
+    }),
     createInviteLink: vi.fn(async (_householdId: string) => 'http://localhost:5173/inbjudan#hemlig'),
     acceptInvite: vi.fn(async (_token: string) => ({ ok: false }) as Awaited<ReturnType<PailoApi['acceptInvite']>>),
   } satisfies PailoApi

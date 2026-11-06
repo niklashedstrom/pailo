@@ -1,20 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import type { Household, Member, PailoApi } from '../api'
 
 interface Props {
   api: PailoApi
+  currentUserId: string
   households: Household[]
   selectedId: string
   onSelect: (id: string) => void
   onSignOut: () => void
 }
 
-export default function HouseholdPage({ api, households, selectedId, onSelect, onSignOut }: Props) {
+export default function HouseholdPage({ api, currentUserId, households, selectedId, onSelect, onSignOut }: Props) {
   const household = households.find((h) => h.id === selectedId) ?? households[0]
   const [loaded, setLoaded] = useState<{ householdId: string; members: Member[] | 'failed' } | undefined>(
     undefined,
   )
   const members = loaded?.householdId === household.id ? loaded.members : undefined
+  // Bumped after a change so the member list is loaded again.
+  const [membersVersion, setMembersVersion] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -25,7 +28,7 @@ export default function HouseholdPage({ api, households, selectedId, onSelect, o
     return () => {
       active = false
     }
-  }, [api, household.id])
+  }, [api, household.id, membersVersion])
 
   return (
     <>
@@ -53,6 +56,15 @@ export default function HouseholdPage({ api, households, selectedId, onSelect, o
             <li key={member.userId}>
               {member.displayName}
               {member.role === 'admin' && <span className="tag">administratör</span>}
+              {member.userId === currentUserId && (
+                <EditName
+                  key={household.id}
+                  api={api}
+                  householdId={household.id}
+                  currentName={member.displayName}
+                  onSaved={() => setMembersVersion((n) => n + 1)}
+                />
+              )}
             </li>
           ))}
         </ul>
@@ -64,6 +76,78 @@ export default function HouseholdPage({ api, households, selectedId, onSelect, o
         Logga ut
       </button>
     </>
+  )
+}
+
+const MAX_NAME_LENGTH = 80
+
+interface EditNameProps {
+  api: PailoApi
+  householdId: string
+  currentName: string
+  onSaved: () => void
+}
+
+/**
+ * Lets a person change their own name in this household. Only shown on their
+ * own row for convenience; the database is what stops changing anyone else's.
+ */
+function EditName({ api, householdId, currentName, onSaved }: EditNameProps) {
+  const [name, setName] = useState<string | undefined>(undefined)
+  const [state, setState] = useState<'idle' | 'saving' | 'failed'>('idle')
+
+  if (name === undefined) {
+    return (
+      <button
+        type="button"
+        className="link"
+        onClick={() => {
+          setName(currentName)
+          setState('idle')
+        }}
+      >
+        Ändra namn
+      </button>
+    )
+  }
+
+  const trimmed = name.trim()
+  const canSave = trimmed.length > 0 && trimmed.length <= MAX_NAME_LENGTH && state !== 'saving'
+
+  async function save(event: FormEvent) {
+    event.preventDefault()
+    if (!canSave) return
+    setState('saving')
+    try {
+      await api.updateDisplayName(householdId, trimmed)
+      setName(undefined)
+      setState('idle')
+      onSaved()
+    } catch {
+      setState('failed')
+    }
+  }
+
+  return (
+    <form className="edit-name" onSubmit={save}>
+      <label htmlFor="display-name">Ditt namn</label>
+      <input
+        id="display-name"
+        value={name}
+        maxLength={MAX_NAME_LENGTH}
+        autoComplete="nickname"
+        onChange={(event) => setName(event.target.value)}
+      />
+      <div className="actions">
+        <button type="submit" disabled={!canSave}>
+          Spara
+        </button>
+        <button type="button" className="secondary" onClick={() => setName(undefined)}>
+          Avbryt
+        </button>
+      </div>
+      {state === 'failed' && <p role="alert">Det gick inte att spara namnet. Försök igen.</p>}
+    </form>
   )
 }
 
