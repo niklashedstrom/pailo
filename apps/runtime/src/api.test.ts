@@ -2,12 +2,22 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import { supabaseApi } from './api'
 
-function mockClient(overrides: { rpc?: unknown; select?: unknown } = {}) {
+function mockClient(overrides: { rpc?: unknown; select?: unknown; update?: unknown } = {}) {
+  let result: unknown = { data: [], error: null }
+  let updating = false
   const query = {
-    select: vi.fn(() => query),
+    select: vi.fn(() => {
+      if (!updating) result = overrides.select ?? { data: [], error: null }
+      return query
+    }),
+    update: vi.fn((_values: unknown) => {
+      updating = true
+      result = overrides.update ?? { data: [{ user_id: 'u-1' }], error: null }
+      return query
+    }),
     eq: vi.fn(() => query),
     order: vi.fn(() => query),
-    then: (resolve: (value: unknown) => void) => resolve(overrides.select ?? { data: [], error: null }),
+    then: (resolve: (value: unknown) => void) => resolve(result),
   }
   const client = {
     auth: {
@@ -47,6 +57,25 @@ describe('supabaseApi', () => {
       { id: 'h-2', name: 'Sommarstugan', role: 'member' },
     ])
     expect(query.eq).toHaveBeenCalledWith('user_id', 'u-1')
+  })
+
+  it("updates the signed-in person's name in one household", async () => {
+    const { client, api, query } = mockClient()
+    await api.updateDisplayName('h-1', '  Pappa ')
+    expect(client.from).toHaveBeenCalledWith('members')
+    expect(query.update).toHaveBeenCalledWith({ display_name: 'Pappa' })
+    expect(query.eq).toHaveBeenCalledWith('household_id', 'h-1')
+    expect(query.eq).toHaveBeenCalledWith('user_id', 'u-1')
+  })
+
+  it('throws when the name could not be updated', async () => {
+    const { api } = mockClient({ update: { data: null, error: { message: 'check violation' } } })
+    await expect(api.updateDisplayName('h-1', 'Pappa')).rejects.toThrow('could not update display name')
+  })
+
+  it('throws when no row was updated', async () => {
+    const { api } = mockClient({ update: { data: [], error: null } })
+    await expect(api.updateDisplayName('h-1', 'Pappa')).rejects.toThrow('could not update display name')
   })
 
   it('turns the invite secret into a link', async () => {

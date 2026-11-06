@@ -87,6 +87,19 @@ button.secondary {
   padding-left: 1.25rem;
 }
 
+button.link {
+  margin-left: 0.25rem;
+  padding: 0.6rem 0.5rem;
+  min-height: 2.75rem;
+  background: transparent;
+  color: #3d6b4f;
+  text-decoration: underline;
+}
+
+.edit-name {
+  margin: 0.5rem 0 1rem;
+}
+
 .tag {
   margin-left: 0.5rem;
   font-size: 0.85rem;
