@@ -7,3 +7,8 @@ dist
 .DS_Store
 .vercel
 *.tsbuildinfo
+
+# Software factory: local working state
+.worktrees
+factory/board.json
+factory/jobs
