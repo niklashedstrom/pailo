@@ -8,7 +8,7 @@ Första användaren är mamma, och hennes första app är familjens matschema.
 
 ## Status
 
-M0 (grunden), M1 (appschemat) och M2 (hushåll, inloggning och behörighet) är klara och Pailo finns på https://pailo.se. Kraven finns i [openspec/specs](openspec/specs). Plan: [docs/06-roadmap.md](docs/06-roadmap.md).
+M0 (grunden), M1 (appschemat) och M2 (hushåll, inloggning och behörighet) är klara och Pailo finns på https://pailo.se. M3 (runtime) pågår: vyer, formulär och tema byggs av byggstenarna och visar vilken giltig beskrivning som helst ([openspec/changes/m3-runtime](openspec/changes/m3-runtime)). Kraven finns i [openspec/specs](openspec/specs). Plan: [docs/06-roadmap.md](docs/06-roadmap.md).
 
 ## Dokumentation
 
@@ -53,3 +53,19 @@ Runtime pratar med den lokala Supabase. Inloggningsmejlen hamnar i Mailpit i st�
 6. Öppna ett privat fönster (eget konto), klistra in länken, logga in som `bertil@exempel.se` via Mailpit i samma privata fönster. Bertil hamnar direkt i Annas hushåll.
 
 Länken i mejlet måste öppnas i samma webbläsare som bad om den. `supabase db reset` tömmer databasen, även testkonton.
+
+### Prova en app lokalt
+
+Pailo har inga färdiga appar; användarnas appar byggs av byggstenarna (från M4 av byggtjänsten). För att prova runtime innan dess kan du lägga in en handskriven beskrivning i ett hushåll i den **lokala** databasen. Verktyget validerar beskrivningen först och vägrar att skriva till molnet.
+
+1. Logga in lokalt och skapa ett hushåll enligt stegen ovan.
+2. Hitta hushållets id i Supabase Studio på http://127.0.0.1:55423 (tabellen `households`), eller med
+   `docker exec supabase_db_pailo psql -U postgres -tAc "select id, name from households"`.
+3. Lägg in en beskrivning:
+   ```sh
+   npm run dev:app -- <hushålls-id> packages/schema/examples/matschema.json
+   ```
+   Verktyget skriver ut appens adress. Med appens id i stället för hushållets sparas filen som en ny version.
+4. Prova med två konton: bjud in det andra kontot enligt stegen ovan, öppna appens adress i båda fönstren och ändra i ett av dem. Det andra visar ändringen när du går tillbaka till fliken.
+
+Exemplen finns i `packages/schema/examples/`: `drop.json` och `matschema.json` är provexempel, och `alla-byggstenar.json` använder varje byggsten.

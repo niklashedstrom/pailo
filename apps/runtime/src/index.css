@@ -114,3 +114,297 @@ button.link {
 [role='alert'] {
   color: #a3261f;
 }
+
+/* ------------------------------------------------------------------------
+   The household's app list (Pailo's own page). */
+
+.app-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.app-list a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid #d8d8d0;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.app-icon {
+  font-size: 1.4rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------------
+   A user's app. Everything below reads only the --app-* variables that the
+   app's theme sets on .app-screen, so the theme never leaks onto Pailo's
+   own pages and every combination stays within the tested tokens. */
+
+.app-screen {
+  margin: -3rem -1rem;
+  padding: 1.5rem 1rem 3rem;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: var(--app-bg);
+  color: var(--app-text);
+  font-family: var(--app-font);
+  line-height: var(--app-line);
+}
+
+.app-screen a {
+  color: var(--app-accent);
+}
+
+.app-screen h1 {
+  margin: 0.25rem 0 var(--app-gap);
+}
+
+.app-screen .back {
+  margin: 0;
+}
+
+.app-screen .back a {
+  display: inline-block;
+  padding: 0.6rem 0;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+}
+
+.app-screen button {
+  background: var(--app-accent);
+  color: var(--app-on-accent);
+  border-radius: var(--app-radius);
+  min-height: 2.75rem;
+}
+
+.app-screen button.secondary {
+  background: transparent;
+  color: var(--app-accent);
+  border: 1px solid var(--app-accent);
+  margin-top: 0;
+}
+
+.app-screen button.link {
+  background: transparent;
+  color: var(--app-accent);
+  margin-left: 0;
+}
+
+.app-screen input,
+.app-screen select,
+.app-screen textarea {
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.75rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  background: var(--app-surface);
+  color: var(--app-text);
+}
+
+.app-screen .hint,
+.app-screen .empty,
+.app-screen .record-field,
+.app-screen .required,
+.app-screen dt {
+  color: var(--app-muted);
+}
+
+.view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: var(--app-gap);
+  border-bottom: 1px solid var(--app-border);
+}
+
+.view-tabs a {
+  padding: 0.6rem 0.9rem;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+  color: var(--app-muted);
+}
+
+.view-tabs a[aria-current='page'] {
+  color: var(--app-text);
+  border-bottom-color: var(--app-accent);
+  font-weight: 600;
+}
+
+.input-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: var(--app-gap);
+}
+
+.records-list,
+.records-cards {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--app-gap);
+}
+
+.records-cards {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr));
+}
+
+.app-screen button.record {
+  display: grid;
+  gap: 0.15rem;
+  width: 100%;
+  text-align: left;
+  padding: var(--app-pad);
+  background: var(--app-surface);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  overflow-wrap: anywhere;
+}
+
+.card button.record {
+  height: 100%;
+  align-content: start;
+}
+
+.multiline {
+  white-space: pre-line;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: var(--app-gap);
+}
+
+.calendar-nav h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.days {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--app-gap);
+}
+
+.day-name {
+  font-size: 0.95rem;
+  margin: 0 0 0.35rem;
+  text-transform: capitalize;
+}
+
+.day.today .day-name {
+  color: var(--app-accent);
+}
+
+.day .empty {
+  margin: 0;
+}
+
+.overview-section h2 {
+  font-size: 1.1rem;
+}
+
+.panel h2:focus {
+  outline: none;
+}
+
+.record-form {
+  display: grid;
+  gap: var(--app-gap);
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.app-screen .field label,
+.app-screen .field .label,
+.app-screen legend {
+  font-weight: 600;
+}
+
+.choices {
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  padding: 0.5rem 0.75rem;
+  margin: 0;
+}
+
+.app-screen label.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  font-weight: 400;
+}
+
+.app-screen .choice input {
+  width: auto;
+  min-height: 0;
+}
+
+.field-error,
+.form-error {
+  color: var(--app-text);
+  font-weight: 600;
+  margin: 0;
+}
+
+.field-error::before,
+.form-error::before {
+  content: '⚠️ ';
+}
+
+.has-error input,
+.has-error select,
+.has-error textarea {
+  border-width: 2px;
+  border-color: var(--app-text);
+}
+
+.record-details {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.record-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.danger-zone {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--app-border);
+}

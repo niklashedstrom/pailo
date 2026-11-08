@@ -30,7 +30,20 @@ AI:n får aldrig skriva direkt till en app. Varje ändring valideras mot schemat
 - **Appbeskrivning** (`packages/schema`): Zod-schema för samlingar och fält, vyer, inmatning, personer och roller, påminnelser och tema. Har `schemaVersion` och migreringsfunktioner så att gamla appar fungerar när schemat växer.
 - **Runtime** (`apps/runtime`): en app som renderar alla användarappar från beskrivningen. Vyer, formulär genererade från fält, tema-tokens, PWA, Web Share Target, bokmärkesknapp.
 - **Byggtjänst** (Edge Function): Claude → strukturerad output → JSON Patch → validering → ny version. Inga andra verktyg än att föreslå en patch.
-- **Data:** generisk `records`-tabell med jsonb. Nya appar kräver aldrig nya tabeller.
+- **Data:** generisk `records`-tabell med jsonb. Nya appar kräver aldrig nya tabeller. Fältvärdena har ett fast format per fälttyp, och runtime kontrollerar dem med `recordDataSchema` innan de sparas:
+
+  | Fälttyp | Lagrat värde |
+  |---|---|
+  | text | sträng |
+  | datum | `"2026-11-11"`, med tid `"2026-11-11T18:30"` (svensk tid, utan tidszon) |
+  | länk | adress som börjar med `https://` eller `http://` |
+  | val | alternativets värde, eller en lista om flera får väljas |
+  | person | `{ "member": "<användar-id>" }` eller `{ "other": "<person-id>" }`, eller en lista |
+  | koppling | id för en post i den kopplade samlingen |
+  | bild | inget än (bilder kommer i M3b) |
+
+  Ett fält utan värde saknas i posten. Ett värde som inte följer formatet visas som tomt, utan att resten av posten påverkas.
+- **Inga färdiga appar:** runtime känner bara till byggstenarna. Innan byggtjänsten finns lägger utvecklare in handskrivna beskrivningar i den lokala databasen med `npm run dev:app` (se README), som validerar beskrivningen och vägrar skriva till molnet.
 - **Påminnelser:** schemalagd Edge Function som skickar mejl, web push om tiden räcker.
 
 ## Stack

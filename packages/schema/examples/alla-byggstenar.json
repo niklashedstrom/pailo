@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "name": "Alla byggstenar",
+  "description": "Testbeskrivning som använder varje byggsten och variant, med påhittade id:n.",
+  "icon": "star",
+  "collections": [
+    {
+      "id": "qx-saker",
+      "name": "Saker",
+      "access": "edit",
+      "fields": [
+        { "id": "f-rubrik", "label": "Rubrik", "type": "text", "required": true },
+        { "id": "f-text", "label": "Längre text", "type": "text", "multiline": true },
+        { "id": "f-dag", "label": "Dag", "type": "date" },
+        { "id": "f-tid", "label": "Dag och tid", "type": "date", "withTime": true },
+        { "id": "f-adress", "label": "Adress", "type": "link" },
+        { "id": "f-foto", "label": "Foto", "type": "image" },
+        { "id": "f-ansvarig", "label": "Ansvarig", "type": "person" },
+        { "id": "f-deltagare", "label": "Deltagare", "type": "person", "multiple": true },
+        {
+          "id": "f-niva",
+          "label": "Nivå",
+          "type": "choice",
+          "options": [
+            { "value": "lag", "label": "Låg" },
+            { "value": "hog", "label": "Hög" }
+          ]
+        },
+        {
+          "id": "f-markningar",
+          "label": "Märkningar",
+          "type": "choice",
+          "multiple": true,
+          "options": [
+            { "value": "rod", "label": "Röd" },
+            { "value": "gron", "label": "Grön" },
+            { "value": "bla", "label": "Blå" }
+          ]
+        },
+        { "id": "f-hor-till", "label": "Hör till", "type": "reference", "collection": "qx-grupper" }
+      ]
+    },
+    {
+      "id": "qx-grupper",
+      "name": "Grupper",
+      "access": "add",
+      "fields": [
+        { "id": "g-namn", "label": "Namn", "type": "text", "required": true },
+        { "id": "g-start", "label": "Start", "type": "date", "required": true }
+      ]
+    },
+    {
+      "id": "qx-arkiv",
+      "name": "Arkiv",
+      "access": "read",
+      "fields": [
+        { "id": "a-anteckning", "label": "Anteckning", "type": "text", "multiline": true, "required": true }
+      ]
+    }
+  ],
+  "views": [
+    {
+      "id": "v-lista",
+      "name": "Lista",
+      "type": "list",
+      "collection": "qx-saker",
+      "fields": ["f-rubrik", "f-dag", "f-niva", "f-markningar", "f-ansvarig", "f-hor-till"],
+      "sort": { "field": "f-rubrik", "direction": "asc" }
+    },
+    {
+      "id": "v-kort",
+      "name": "Kort",
+      "type": "cards",
+      "collection": "qx-grupper",
+      "sort": { "field": "g-start", "direction": "desc" }
+    },
+    {
+      "id": "v-vecka",
+      "name": "Vecka",
+      "type": "calendar",
+      "collection": "qx-saker",
+      "dateField": "f-dag",
+      "range": "week",
+      "fields": ["f-rubrik", "f-ansvarig"]
+    },
+    {
+      "id": "v-manad",
+      "name": "Månad",
+      "type": "calendar",
+      "collection": "qx-saker",
+      "dateField": "f-tid",
+      "range": "month"
+    },
+    {
+      "id": "v-oversikt",
+      "name": "Översikt",
+      "type": "overview",
+      "sections": [
+        { "collection": "qx-saker", "title": "Senaste sakerna", "limit": 5 },
+        { "collection": "qx-grupper", "sort": { "field": "g-namn", "direction": "asc" } },
+        { "collection": "qx-arkiv", "limit": 3 }
+      ]
+    }
+  ],
+  "inputs": [
+    { "id": "i-ny-sak", "name": "Ny sak", "type": "form", "collection": "qx-saker" },
+    { "id": "i-ny-grupp", "name": "Ny grupp", "type": "form", "collection": "qx-grupper" },
+    { "id": "i-ny-anteckning", "name": "Ny anteckning", "type": "form", "collection": "qx-arkiv" }
+  ],
+  "people": {
+    "others": [
+      { "id": "p-ett", "name": "Kim" },
+      { "id": "p-tva", "name": "Ölund" }
+    ]
+  },
+  "reminders": [],
+  "theme": {
+    "preset": "calm",
+    "palette": "berry",
+    "font": "classic",
+    "spacing": "airy",
+    "radius": "small",
+    "density": "comfortable"
+  }
+}

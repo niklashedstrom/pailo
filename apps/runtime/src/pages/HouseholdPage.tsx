@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import type { Household, Member, PailoApi } from '../api'
+import AppList from './AppList'
 
 interface Props {
   api: PailoApi
@@ -67,6 +68,8 @@ export default function HouseholdPage({
           </select>
         </p>
       )}
+
+      <AppList api={api} householdId={household.id} />
 
       <h2>Medlemmar</h2>
       {members === undefined && <p aria-busy="true">Laddar …</p>}

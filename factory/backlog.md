@@ -14,12 +14,17 @@ Klart som jobb `001-edit-display-name` ([#7](https://github.com/niklashedstrom/p
 
 - [x] Markera ditt eget namn med "(du)" i medlemslistan på hushållssidan → 002-mark-yourself-in-members
 - [x] Låt en administratör byta namn på hushållet från hushållssidan → 003-rename-household
-- [ ] Låt en administratör se hushållets öppna inbjudningar (när de skapades och när de går ut) och återkalla en av dem
 - [ ] Låt en administratör ta bort en annan medlem ur hushållet, med en bekräftelse på sidan först
-- [ ] Låt en administratör göra en medlem till administratör och ta tillbaka det, men aldrig så att hushållet blir utan administratör
 - [ ] Låt en medlem lämna hushållet själv, med en bekräftelse först och ett tydligt besked om den är sista administratören
-- [ ] Låt en medlem skicka ett önskemål ("Jag önskar att …") från hushållssidan och se hushållets tidigare önskemål
 
 ## Teknik
 
 - [ ] Uppgradera Supabase CLI till v3 lokalt och i CI, och testa om databasen fortfarande kraschar när någon anropar en funktion utan körrätt. Om kraschen är borta: ta bort körrätten för utloggade på `create_household`, `create_invite` och `accept_invite` och uppdatera kommentarerna och designanteckningen
+
+## Pausat till efter M3
+
+Fokus ligger på byggstenarna (M3–M5). Raderna saknar kryssruta så att `/factory next` inte tar dem; lägg tillbaka `[ ]` när de ska göras.
+
+- Låt en administratör se hushållets öppna inbjudningar (när de skapades och när de går ut) och återkalla en av dem
+- Låt en administratör göra en medlem till administratör och ta tillbaka det, men aldrig så att hushållet blir utan administratör
+- Låt en medlem skicka ett önskemål ("Jag önskar att …") från hushållssidan och se hushållets tidigare önskemål
