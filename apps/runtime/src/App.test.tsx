@@ -2,7 +2,8 @@ import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { fakeApi, memoryStorage } from './test-helpers'
+import { fakeApi, fakeApp, memoryStorage } from './test-helpers'
+import { rawDrop } from './test-fixtures'
 
 const familjen = { id: 'h-1', name: 'Familjen', role: 'admin' as const }
 const members = {
@@ -353,5 +354,42 @@ describe('when something goes wrong', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Försök igen' }))
 
     expect(await screen.findByRole('heading', { name: 'Familjen' })).toBeInTheDocument()
+  })
+})
+
+describe("the household's apps", () => {
+  const app = (id: string, name: string, icon?: string) => fakeApp(id, 'h-1', { ...rawDrop, name, ...(icon ? { icon } : {}) })
+
+  it('says when there are no apps, and offers no ready-made apps to add', async () => {
+    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
+    render(<App api={api} storage={memoryStorage()} />)
+    expect(await screen.findByText('Hushållet har inga appar än.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /lägg till/i })).not.toBeInTheDocument()
+    expect(screen.queryByText(/mall/i)).not.toBeInTheDocument()
+  })
+
+  it('lists the apps and opens one at its own address', async () => {
+    const { api } = fakeApi({
+      userId: 'u-1',
+      households: [familjen],
+      members,
+      apps: [app('a-1', 'Matschema', 'food'), app('a-2', 'Drop')],
+    })
+    render(<App api={api} storage={memoryStorage()} />)
+    const matschema = await screen.findByRole('link', { name: /Matschema/ })
+    expect(matschema).toHaveAttribute('href', '/app/a-1')
+    expect(matschema).toHaveTextContent('🍽️')
+    expect(screen.getByRole('link', { name: /Drop/ })).toBeInTheDocument()
+    await userEvent.click(matschema)
+    expect(await screen.findByRole('heading', { name: 'Matschema' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/app/a-1')
+    window.history.replaceState(null, '', '/')
+  })
+
+  it('says so when the apps cannot be shown', async () => {
+    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
+    api.listApps.mockRejectedValueOnce(new Error('network'))
+    render(<App api={api} storage={memoryStorage()} />)
+    expect(await screen.findByText('Det gick inte att visa apparna just nu.')).toBeInTheDocument()
   })
 })

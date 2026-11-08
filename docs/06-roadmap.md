@@ -12,7 +12,7 @@ Första betalande hushåll väntas våren 2027, med 8–12 timmar i veckan (1–
 
 ## Byggsteg fas 1
 
-Fas 1 delas i sex milstolpar, var och en med ett tydligt klart-kriterium. Stegen är storleksanpassade för pass på 1–2 timmar på vardagar och längre pass på helgen. Varje milstolpe blir en OpenSpec-ändring som körs i Claude Code.
+Fas 1 delas i sex milstolpar (M3 i två delar), var och en med ett tydligt klart-kriterium. Stegen är storleksanpassade för pass på 1–2 timmar på vardagar och längre pass på helgen. Varje milstolpe blir en OpenSpec-ändring som körs i Claude Code.
 
 ### M0 · Grunden (helg 1)
 
@@ -44,16 +44,25 @@ Fas 1 delas i sex milstolpar, var och en med ett tydligt klart-kriterium. Stegen
 
 **Klart när:** två testkonton i olika hushåll är helt isolerade, bevisat av tester.
 
-### M3 · Runtime (vecka 3–5)
+### M3 · Runtime (vecka 3–4)
+
+Runtime känner bara till byggstenarna och visar vilken giltig beskrivning som helst. Inga färdiga appar finns i produkten; Drop och matschemat är provexempel.
 
 - [ ] Rendera vyerna lista, kort, kalender och översikt från en beskrivning
 - [ ] Generera formulär från fälten, med skapa, ändra och ta bort mot `records`
 - [ ] Tema-tokens: palett, typsnitt, avstånd, rundning, täthet, plus tre förinställda stilar
+- [ ] Testbeskrivning som använder varje byggsten, och ett lokalt utvecklarskript som lägger in beskrivningar
+
+**Klart när:** Drop och matschemat körs i runtime från de handskrivna beskrivningarna och delas mellan två konton.
+
+### M3b · Runtime, del 2 (när den behövs, blockerar inte M4)
+
 - [ ] PWA som går att installera på mobilen
 - [ ] Dela-meny via Web Share Target och bokmärkesknapp med begränsad, återkallbar token
 - [ ] Påminnelser: schemalagd Edge Function som skickar mejl, web push om tiden räcker
+- [ ] Bilder: privat lagring, signerade länkar, kontroll av filtyp och storlek
 
-**Klart när:** Drop och matschemat körs i runtime från de handskrivna beskrivningarna och delas mellan två konton.
+**Klart när:** Drop tar emot länkar från mobilens dela-meny och matschemat påminner om att planera veckan.
 
 ### M4 · Byggtjänsten (vecka 5–7)
 

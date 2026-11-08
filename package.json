@@ -4,7 +4,8 @@
   "type": "module",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "scripts"
   ],
   "engines": {
     "node": ">=22"
@@ -16,7 +17,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "openspec": "openspec",
     "test": "npm run test --workspaces --if-present",
-    "factory:board": "python3 -m http.server 8765 -d factory"
+    "factory:board": "python3 -m http.server 8765 -d factory",
+    "dev:app": "npm run dev:app -w @pailo/scripts --"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.16.0"

@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import type { Household, PailoApi } from './api'
 import { clearInvite, pendingInvite } from './invite'
 import HouseholdPage from './pages/HouseholdPage'
 import InviteProblem from './pages/InviteProblem'
 import NameHousehold from './pages/NameHousehold'
 import SignIn from './pages/SignIn'
+import { useRoute } from './router'
+
+// Only loaded when someone opens an app, so the sign-in page stays small.
+const AppScreen = lazy(() => import('./runtime/AppScreen'))
 
 interface Props {
   api: PailoApi
@@ -20,10 +24,11 @@ type View =
   | { kind: 'household'; userId: string; households: Household[]; selectedId: string }
 
 /**
- * Signed out → (invite) → no household → household. No router: the only
- * path besides "/" is the invite link, which is read once at start-up.
+ * Signed out → (invite) → no household → household, and from there an app
+ * at /app/<id>/<view>. The invite link is read once at start-up.
  */
-export default function App({ api, storage = window.sessionStorage }: Props) {
+export default function App({ api, storage = window.sessionStorage, now }: Props & { now?: Date }) {
+  const route = useRoute()
   const [userId, setUserId] = useState<string | null | undefined>(undefined)
   const [reload, setReload] = useState(0)
   // The result of loading for one (user, reload) pair. While it belongs to
@@ -132,6 +137,20 @@ export default function App({ api, storage = window.sessionStorage }: Props) {
       case 'no-household':
         return <NameHousehold api={api} onCreated={refresh} onSignOut={signOut} />
       case 'household':
+        if (route.kind === 'app') {
+          return (
+            <Suspense fallback={<p aria-busy="true">Laddar …</p>}>
+              <AppScreen
+                api={api}
+                appId={route.appId}
+                viewId={route.viewId}
+                userId={view.userId}
+                households={view.households}
+                now={now}
+              />
+            </Suspense>
+          )
+        }
         return (
           <HouseholdPage
             api={api}
