@@ -272,40 +272,69 @@ button.link {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr));
 }
 
-.app-screen button.record {
+/* The frame sits on the item, so a link field can sit beside the button. */
+.app-screen .record-item {
   display: grid;
+  align-content: start;
   gap: 0.15rem;
-  width: 100%;
-  text-align: left;
   padding: var(--app-pad);
   background: var(--app-surface);
-  color: var(--app-text);
   border: 1px solid var(--app-border);
   border-radius: var(--app-radius);
   overflow-wrap: anywhere;
 }
 
-.card button.record {
-  height: 100%;
-  align-content: start;
+.app-screen button.record {
+  display: grid;
+  gap: 0.15rem;
+  width: 100%;
+  text-align: left;
+  margin: 0;
+  padding: 0.25rem 0;
+  min-height: 0;
+  background: transparent;
+  color: var(--app-text);
+  border: 0;
+  border-radius: 0;
+}
+
+.app-screen .record-item > .record-field a {
+  display: inline-block;
+  padding: 0.5rem 0;
+  min-height: 2.75rem;
+  box-sizing: border-box;
 }
 
 .multiline {
   white-space: pre-line;
 }
 
+/* Title on its own row, earlier/later side by side under it, at any width. */
 .calendar-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: 'title title' 'prev next';
   gap: 0.5rem;
-  flex-wrap: wrap;
   margin-bottom: var(--app-gap);
 }
 
 .calendar-nav h2 {
+  grid-area: title;
   margin: 0;
   font-size: 1.1rem;
+}
+
+.app-screen .calendar-nav button {
+  margin: 0;
+  width: 100%;
+}
+
+.calendar-nav button:first-child {
+  grid-area: prev;
+}
+
+.calendar-nav button:last-child {
+  grid-area: next;
 }
 
 .days {

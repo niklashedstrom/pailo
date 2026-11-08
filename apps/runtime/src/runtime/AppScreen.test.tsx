@@ -90,6 +90,17 @@ describe('views', () => {
     expect(items[0]).toHaveTextContent('Recept')
   })
 
+  it('puts a saved link next to the record button, not inside it', async () => {
+    const { state } = setup({ path: '/app/a-drop' })
+    create(state, 'a-drop', 'drops', { title: 'Artikel', url: 'https://pailo.se/a' })
+    const link = await screen.findByRole('link', { name: 'pailo.se/a' })
+    expect(link.closest('button')).toBeNull()
+    // Empty fields (no note, no tags) leave nothing behind.
+    expect(link.closest('li')!.querySelectorAll('.record-field')).toHaveLength(1)
+    expect(link).toHaveAttribute('href', 'https://pailo.se/a')
+    expect(screen.getByRole('button', { name: /Artikel/ })).not.toHaveTextContent('pailo.se/a')
+  })
+
   it("shows the meal plan's dishes as cards sorted by name", async () => {
     const { state } = setup({ path: '/app/a-meal/ratter' })
     for (const name of ['Ärtsoppa', 'Lasagne', 'Fiskgratäng']) create(state, 'a-meal', 'ratter', { namn: name, sort: 'kott' })
@@ -117,6 +128,9 @@ describe('views', () => {
     expect(wednesday).toHaveTextContent('Lasagne')
     expect(wednesday).toHaveTextContent('Middag')
     expect(screen.getAllByText('Lasagne')).toHaveLength(1)
+    // The meal is named after its dish, never "Namnlös".
+    expect(wednesday.querySelector('.record-title')).toHaveTextContent('Lasagne')
+    expect(wednesday).not.toHaveTextContent('Namnlös')
 
     await userEvent.click(screen.getByRole('button', { name: 'Nästa vecka' }))
     expect(screen.getByRole('heading', { name: 'Vecka 47' })).toBeInTheDocument()

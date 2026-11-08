@@ -47,22 +47,33 @@ function RecordSummary({
   onOpen: (record: AppRecord) => void
   className: string
 }) {
-  // The first shown text field is the heading; without one, the record's title.
-  const heading = fields.find((field) => field.type === 'text')
-  const rest = fields.filter((field) => field !== heading)
+  // The first shown text or reference field with a value is the heading;
+  // without one, the record's title. Empty fields leave no blank line.
+  const hasValue = (field: Field) => {
+    const raw = record.data[field.id]
+    // An unsafe link is still shown as text, so check the raw value for links.
+    return field.type === 'link' ? typeof raw === 'string' && raw.trim() !== '' : displayText(field, raw, data) !== ''
+  }
+  const heading = fields.find((field) => (field.type === 'text' || field.type === 'reference') && hasValue(field))
+  const rest = fields.filter((field) => field !== heading && hasValue(field))
+  // Links go next to the button, not inside it: a link inside a button can't
+  // be reached or tapped on its own.
+  const links = rest.filter((field) => field.type === 'link')
+  const shown = (field: Field) => (
+    <span key={field.id} className="record-field">
+      <span className="visually-hidden">{field.label}: </span>
+      <FieldValue field={field} value={record.data[field.id]} data={data} />
+    </span>
+  )
   return (
-    <li className={className}>
+    <li className={`${className} record-item`}>
       <button type="button" className="record" onClick={() => onOpen(record)}>
         <strong className="record-title">
-          {(heading && displayText(heading, record.data[heading.id], data)) || recordTitle(collection, record)}
+          {heading ? displayText(heading, record.data[heading.id], data) : recordTitle(collection, record, data)}
         </strong>
-        {rest.map((field) => (
-          <span key={field.id} className="record-field">
-            <span className="visually-hidden">{field.label}: </span>
-            <FieldValue field={field} value={record.data[field.id]} data={data} />
-          </span>
-        ))}
+        {rest.filter((field) => field.type !== 'link').map(shown)}
       </button>
+      {links.map(shown)}
     </li>
   )
 }

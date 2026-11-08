@@ -15,12 +15,25 @@ export function findCollection(description: AppDescription, id: string): Collect
   return description.collections.find((collection) => collection.id === id)
 }
 
-/** The record's name: its first required text field, else first text field. */
-export function recordTitle(collection: Collection, record: AppRecord): string {
+/**
+ * The record's name: its first required text field, else first text field.
+ * Without text, the first record it points to (a planned meal is called
+ * after its dish). Given `data` only one level deep, so references that
+ * point at each other can't loop.
+ */
+export function recordTitle(collection: Collection, record: AppRecord, data?: AppData): string {
   const texts = collection.fields.filter((field) => field.type === 'text')
   const field = texts.find((f) => f.required) ?? texts[0]
   const value = field ? parseFieldValue(field, record.data[field.id]) : undefined
-  return typeof value === 'string' ? value : UNTITLED
+  if (typeof value === 'string') return value
+  if (data) {
+    for (const reference of collection.fields) {
+      if (reference.type !== 'reference') continue
+      const text = displayText(reference, record.data[reference.id], data)
+      if (text !== '') return text
+    }
+  }
+  return UNTITLED
 }
 
 export function personName(ref: PersonRef, data: AppData): string | undefined {

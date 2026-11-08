@@ -46,12 +46,14 @@
 
 - [x] 8.1 `theme/tokens.ts` och `resolveTheme` enligt design beslut 7, satt som CSS-variabler på appens yttersta element, plus appens CSS som bara använder variablerna; verifiera med tester för förinställning utan tillval, tillval som ersätter och att Pailos egna sidor inte påverkas
 - [x] 8.2 Kontrasttest för alla sex paletter (text, dämpad text och text på accent mot sina bakgrunder) som kräver WCAG AA; verifiera att testet går grönt och blir rött med en för ljus testfärg
-- [ ] 8.3 Kontrollera Drop och matschemat i alla tre förinställningar i 360 pixlars bredd utan sidledes skroll, i förhandsvisningen för PR:en; verifiera med skärmbilder i PR:en
+- [x] 8.3 Kontrollera Drop och matschemat i alla tre förinställningar i 360 pixlars bredd utan sidledes skroll, i förhandsvisningen för PR:en; verifiera med skärmbilder i PR:en
+  - Gjort lokalt i Chrome utan fönster, 360 px: alla tre förinställningar × Drop och matschemat (varje vy och ett formulär) utan sidledes skroll. Skärmbilder i `skarmbilder/83-*.png`. Hittade och rättade: länk inuti postknappen, tomma fält gav tomma rader, veckonavigeringen radbröts klumpigt.
 
 ## 9. Klart-kriteriet
 
 - [x] 9.1 Integrationstest i runtime med fejk-API:t och två inloggade personer i samma hushåll: matschemat finns som app i hushållet, Anna skapar Lasagne och planerar den till onsdag; Bertil ser den i Veckan och ändrar vem som lagar; samma för en post i Drop; plus ett test som skapar, ändrar och tar bort en post i varje samling i `alla-byggstenar.json`; verifiera med `npm test`
-- [ ] 9.2 Kör klart-kriteriet för hand lokalt (`supabase start`, två konton via Mailpit, Drop och matschemat inlagda med `npm run dev:app`) och beskriv resultatet med skärmbilder i PR:en; verifiera att båda apparna fungerar för båda kontona
+- [x] 9.2 Kör klart-kriteriet för hand lokalt (`supabase start`, två konton via Mailpit, Drop och matschemat inlagda med `npm run dev:app`) och beskriv resultatet med skärmbilder i PR:en; verifiera att båda apparna fungerar för båda kontona
+  - Gjort lokalt mot `supabase start` med Anna, Bertil och en utomstående, i Chrome utan fönster (inloggning via engångslänk från den lokala databasen i stället för Mailpit). Bertil ser båda apparna och Annas lasagne, lägger till en rätt som Anna ser, ser Annas drop utan att kunna ändra, ändrar sin egen men kan inte ta bort; Anna kan ta bort; den utomstående når inte appen. Skärmbilder i `skarmbilder/92-*.png`. Hittade och rättade: en planerad måltid hette "Namnlös", nu heter den som rätten.
 - [x] 9.3 Uppdatera README:s status och `docs/03-arkitektur.md` med fältvärdenas format och utvecklarskriptet; verifiera att länkarna i README fungerar
 
 ## Workflow follow-up

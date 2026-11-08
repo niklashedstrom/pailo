@@ -215,7 +215,7 @@ function RecordPanel({
   const remove = () => run(() => api.deleteRecord(record!.id), 'Det gick inte att ta bort. Försök igen.')
 
   const rights = can(collection, record?.createdBy ?? null)
-  const title = panel.kind === 'new' ? panel.title : recordTitle(collection, record!)
+  const title = panel.kind === 'new' ? panel.title : recordTitle(collection, record!, data)
 
   return (
     <section className="panel" aria-labelledby="panel-title">
@@ -260,7 +260,7 @@ function RecordPanel({
         <div className="danger-zone">
           {confirming ? (
             <>
-              <p>Vill du ta bort {recordTitle(collection, record)}? Det går inte att ångra.</p>
+              <p>Vill du ta bort {recordTitle(collection, record, data)}? Det går inte att ångra.</p>
               <div className="actions">
                 <button type="button" className="danger" onClick={remove} disabled={busy}>
                   Ja, ta bort
