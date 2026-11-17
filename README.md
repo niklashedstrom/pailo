@@ -8,7 +8,7 @@ Första användaren är mamma, och hennes första app är familjens matschema.
 
 ## Status
 
-M0 (grunden), M1 (appschemat) och M2 (hushåll, inloggning och behörighet) är klara och Pailo finns på https://pailo.se. M3 (runtime) pågår: vyer, formulär och tema byggs av byggstenarna och visar vilken giltig beskrivning som helst ([openspec/changes/m3-runtime](openspec/changes/m3-runtime)). Kraven finns i [openspec/specs](openspec/specs). Plan: [docs/06-roadmap.md](docs/06-roadmap.md).
+M0 (grunden), M1 (appschemat), M2 (hushåll, inloggning och behörighet) och M3 (runtime) är klara och Pailo finns på https://pailo.se. Runtime visar vilken giltig appbeskrivning som helst med vyer, formulär och tema byggda av byggstenarna. Nästa steg är M4 (byggtjänsten). Kraven finns i [openspec/specs](openspec/specs). Plan: [docs/06-roadmap.md](docs/06-roadmap.md).
 
 ## Dokumentation
 

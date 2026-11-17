@@ -173,15 +173,15 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
 <header>
   <p class="eyebrow">Pailo · fas 1 · Kärnan</p>
   <h1>Läget just nu</h1>
-  <p class="lede">Grunden, appschemat och hushållen med inloggning är klara och finns på <a href="https://pailo.se">pailo.se</a>. Nästa milstolpe är M3: att faktiskt köra Drop och matschemat i appen. Först behövs ett beslut om egen e-posttjänst.</p>
-  <p class="updated">Uppdaterad 6 november 2026 · tre av sex milstolpar klara · två fabriksjobb klara</p>
+  <p class="lede">Grunden, appschemat, hushållen och runtime är klara och finns på <a href="https://pailo.se">pailo.se</a>. Appen visar nu vilken giltig appbeskrivning som helst, och Drop och matschemat körs och delas mellan två konton. Nästa milstolpe är M4: AI:n ändrar appen. Innan mamma börjar behövs en egen e-posttjänst.</p>
+  <p class="updated">Uppdaterad 17 november 2026 · fyra av sex milstolpar klara · tre fabriksjobb klara</p>
 
   <ol class="rail" aria-label="Milstolpar i fas 1">
     <li class="done"><div class="bar"></div><span class="code">M0</span><span class="name">Grunden</span></li>
     <li class="done"><div class="bar"></div><span class="code">M1</span><span class="name">Appschemat</span></li>
     <li class="done"><div class="bar"></div><span class="code">M2</span><span class="name">Data och behörighet</span></li>
-    <li class="next"><div class="bar"></div><span class="code">M3</span><span class="name">Runtime</span></li>
-    <li><div class="bar"></div><span class="code">M4</span><span class="name">Byggtjänsten</span></li>
+    <li class="done"><div class="bar"></div><span class="code">M3</span><span class="name">Runtime</span></li>
+    <li class="next"><div class="bar"></div><span class="code">M4</span><span class="name">Byggtjänsten</span></li>
     <li><div class="bar"></div><span class="code">M5</span><span class="name">Intervju och design</span></li>
   </ol>
 </header>
@@ -199,14 +199,14 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
     <div>
       <p class="eyebrow">Nästa steg</p>
       <ul>
-        <li>Kör fabrikens kö med <code>/factory next</code></li>
-        <li>Starta M3 med <code>/opsx:propose</code></li>
-        <li>Rendera vyer och formulär från de handskrivna exemplen</li>
+        <li>Föreslå M4 med <code>/opsx:propose</code></li>
+        <li>Mät vad ett byggsamtal kostar innan något går live</li>
+        <li>Fabrikens kö med <code>/factory next</code> när det finns tid över</li>
       </ul>
     </div>
     <div>
-      <p class="eyebrow">Klart när (M3)</p>
-      <p>Drop och matschemat körs i appen från de handskrivna beskrivningarna och delas mellan två konton.</p>
+      <p class="eyebrow">Klart när (M4)</p>
+      <p>Minst 90 % av 20 testproblem i vardagsspråk ger en giltig app, och kostnaden per byggsamtal är uppmätt.</p>
     </div>
   </div>
 </section>
@@ -260,23 +260,37 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
       </div>
     </details>
 
-    <details class="ms is-next" open>
-      <summary><span class="code">M3</span><span class="title"><h3>Runtime</h3><span>Apparna körs på riktigt</span></span><span class="pill next">Nästa</span></summary>
+    <details class="ms is-done">
+      <summary><span class="code">M3</span><span class="title"><h3>Runtime</h3><span>Vilken app som helst körs från sin beskrivning</span></span><span class="pill done">Klar 17 nov</span></summary>
       <div class="body">
         <ul class="items">
-          <li>Vyerna lista, kort, kalender och översikt från en beskrivning</li>
-          <li>Formulär från fälten, med skapa, ändra och ta bort</li>
-          <li>Tema: palett, typsnitt, avstånd, rundning, täthet och tre stilar</li>
-          <li>Installerbar på mobilen</li>
-          <li>Dela-meny och bokmärkesknapp med återkallbar nyckel</li>
-          <li>Påminnelser via mejl, push om tiden räcker</li>
+          <li class="x">Vyerna lista, kort, kalender och översikt från en beskrivning</li>
+          <li class="x">Formulär från fälten, med skapa, ändra och ta bort, och knappar efter behörighet</li>
+          <li class="x">Tema: palett, typsnitt, avstånd, rundning, täthet och tre stilar, läsbara i mobilbredd</li>
+          <li class="x">Testbeskrivning med varje byggsten och ett lokalt skript som lägger in beskrivningar</li>
+          <li class="x">Inga färdiga appar i produkten, Drop och matschemat är bara provexempel</li>
         </ul>
-        <p class="gate">Klart när: Drop och matschemat körs från de handskrivna beskrivningarna och delas mellan två konton.</p>
+        <p class="gate">Klart när: Drop och matschemat körs från de handskrivna beskrivningarna och delas mellan två konton. Visat i webbläsaren med Anna, Bertil och en utomstående.</p>
+        <p class="links"><a href="https://github.com/niklashedstrom/pailo/pull/13">PR #13</a> · <a href="https://github.com/niklashedstrom/pailo/pull/14">PR #14</a> · krav i <code>openspec/specs/app-runtime</code>, <code>app-data</code></p>
       </div>
     </details>
 
     <details class="ms">
-      <summary><span class="code">M4</span><span class="title"><h3>Byggtjänsten</h3><span>AI ändrar appen, varje ändring kan ångras</span></span><span class="pill todo">Planerad</span></summary>
+      <summary><span class="code">M3b</span><span class="title"><h3>Runtime, del 2</h3><span>När den behövs, blockerar inte M4</span></span><span class="pill todo">Senare</span></summary>
+      <div class="body">
+        <ul class="items">
+          <li>Installerbar på mobilen</li>
+          <li>Dela-meny och bokmärkesknapp med återkallbar nyckel</li>
+          <li>Påminnelser via mejl, push om tiden räcker</li>
+          <li>Bilder med privat lagring</li>
+          <li>Mindre nedladdning när appen öppnas</li>
+        </ul>
+        <p class="gate">Klart när: Drop tar emot länkar från mobilens dela-meny och matschemat påminner om att planera veckan.</p>
+      </div>
+    </details>
+
+    <details class="ms is-next" open>
+      <summary><span class="code">M4</span><span class="title"><h3>Byggtjänsten</h3><span>AI ändrar appen, varje ändring kan ångras</span></span><span class="pill next">Nästa</span></summary>
       <div class="body">
         <ul class="items">
           <li>Claude föreslår ändringar som JSON Patch mot beskrivningen</li>
@@ -318,7 +332,7 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
           <td><span class="pill warn">Beslut</span></td>
           <td>Egen e-posttjänst för inloggningsmejl
             <span class="why">Supabase egen e-post når bara ditt Supabase-team och skickar få mejl. På gratisnivån går mejlen inte heller att få på svenska utan egen tjänst.</span></td>
-          <td>Före M3:s klart när</td>
+          <td>Innan mamma börjar</td>
         </tr>
         <tr>
           <td><span class="pill next">Risk</span></td>
@@ -358,12 +372,12 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
       <tbody>
         <tr><td><span class="pill done">Klar</span></td><td>Ändra sitt eget namn i hushållet <span class="why">Jobb 001, <a href="https://github.com/niklashedstrom/pailo/pull/7">PR #7</a>, två granskningsrundor</span></td><td>Hushållet</td></tr>
         <tr><td><span class="pill done">Klar</span></td><td>"(du)" vid ditt eget namn i medlemslistan <span class="why">Jobb 002, <a href="https://github.com/niklashedstrom/pailo/pull/9">PR #9</a>, godkänt i första rundan</span></td><td>Hushållet</td></tr>
-        <tr><td><span class="pill todo">Kö</span></td><td>Administratören byter namn på hushållet</td><td>Hushållet</td></tr>
-        <tr><td><span class="pill todo">Kö</span></td><td>Se och återkalla öppna inbjudningar</td><td>Hushållet</td></tr>
+        <tr><td><span class="pill done">Klar</span></td><td>Administratören byter namn på hushållet <span class="why">Jobb 003, <a href="https://github.com/niklashedstrom/pailo/pull/12">PR #12</a></span></td><td>Hushållet</td></tr>
         <tr><td><span class="pill todo">Kö</span></td><td>Ta bort en medlem, med bekräftelse</td><td>Hushållet</td></tr>
-        <tr><td><span class="pill todo">Kö</span></td><td>Göra en medlem till administratör och ta tillbaka det</td><td>Hushållet</td></tr>
         <tr><td><span class="pill todo">Kö</span></td><td>Lämna hushållet själv</td><td>Hushållet</td></tr>
-        <tr><td><span class="pill todo">Kö</span></td><td>Skicka och se önskemål</td><td>Hushållet</td></tr>
+        <tr><td><span class="pill todo">Pausad</span></td><td>Se och återkalla öppna inbjudningar <span class="why">Pausad medan fokus ligger på byggstenarna</span></td><td>Hushållet</td></tr>
+        <tr><td><span class="pill todo">Pausad</span></td><td>Göra en medlem till administratör och ta tillbaka det</td><td>Hushållet</td></tr>
+        <tr><td><span class="pill todo">Pausad</span></td><td>Skicka och se önskemål</td><td>Hushållet</td></tr>
         <tr><td><span class="pill todo">Kö</span></td><td>Supabase CLI v3 och kontroll av databaskraschen <span class="why">Om kraschen är borta stängs funktionerna för utloggade. Ändrar databasen, så du godkänner sammanslagningen.</span></td><td>Teknik</td></tr>
       </tbody>
     </table>
@@ -394,8 +408,8 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
 <section aria-labelledby="nu-h">
   <h2 id="nu-h">I siffror</h2>
   <div class="numbers">
-    <div class="num"><b>141</b><span>databastester, varav 49 för isolering</span></div>
-    <div class="num"><b>118</b><span>tester i appen och schemat</span></div>
+    <div class="num"><b>143</b><span>databastester, varav 49 för isolering</span></div>
+    <div class="num"><b>317</b><span>tester i appen, schemat och skripten</span></div>
     <div class="num"><b>7</b><span>tabeller med behörighet per hushåll</span></div>
     <div class="num"><b>6</b><span>migreringar i molnet</span></div>
   </div>
