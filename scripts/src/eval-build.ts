@@ -3,7 +3,11 @@
 // It costs money: it refuses to run without --max-usd and stops before a
 // problem could take the total past that cap.
 //
-//   ANTHROPIC_API_KEY=... npm run eval:build -- --max-usd 5 [--model claude-opus-5-5] [--effort medium] [--only 01,15]
+//   npm run eval:build -- --max-usd 5 [--model claude-opus-5-5] [--effort medium] [--only 01,15]
+//
+// Signs in like the Anthropic SDK does: ANTHROPIC_API_KEY if set, otherwise
+// the profile from `ant auth login` on this computer. No key is ever stored
+// in the repo.
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -199,12 +203,20 @@ export function report(results: ProblemResult[], totalUsd: number): string {
 
 async function main(args: string[]) {
   const options = parseArgs(args)
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) throw new EvalError('Set ANTHROPIC_API_KEY in the environment (never in a file in the repo).')
   const all = loadProblems()
   const problems = options.only ? all.filter((p) => options.only!.some((id) => p.id.startsWith(id))) : all
   console.log(`Running ${problems.length} problem(s) with ${options.model} (${options.effort}), cap $${options.maxUsd}\n`)
-  const claude = anthropicCaller(new Anthropic({ apiKey }), { model: options.model, effort: options.effort })
+  // A free call that proves the sign-in works and the model exists, before anything costs money.
+  const client = new Anthropic()
+  try {
+    await client.models.retrieve(options.model)
+  } catch (error) {
+    throw new EvalError(
+      `Could not reach the Claude API with model ${options.model} (${error instanceof Error ? error.message : error}). ` +
+        'Run `ant auth login` in your terminal, or set ANTHROPIC_API_KEY.',
+    )
+  }
+  const claude = anthropicCaller(client, { model: options.model, effort: options.effort })
   const { results, totalUsd } = await runEvals(problems, claude, options)
   const summary = report(results, totalUsd)
   console.log(`\n${summary}`)

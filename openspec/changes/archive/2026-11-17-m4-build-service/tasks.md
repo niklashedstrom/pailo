@@ -41,13 +41,13 @@
 
 - [x] 6.1 20 problem i `evals/build/` enligt design beslut 10: ungefär 14 nya appar (bland dem Drop och matschemat från noll), 6 ändringar av exemplen, varav 2 med en del som inte går; verifiera med ett test att alla 20 läses och har giltig form
 - [x] 6.2 `npm run eval:build` med obligatoriskt `--max-usd`, `--model`, `--only`, kontroll av taket före varje problem, tabell i terminalen och JSON-fil som git ignorerar; verifiera med låtsasklient att skriptet stannar vid taket och att det vägrar köra utan `--max-usd`
-- [ ] 6.3 **Kostar pengar, kräver ägarens klartecken och tak:** kör evals med standardmodellen; verifiera att minst 18 av 20 blir användbara appar och spara en sammanfattning av resultatet (andel, kostnad per byggsamtal, tid) i `evals/build/RESULTAT.md`
-- [ ] 6.4 Om under 18: förbättra systemprompten eller felbeskeden i det nya försöket utifrån felen per problem, och kör igen med nytt klartecken; verifiera med en ny körning
+- [x] 6.3 **Kostar pengar, kräver ägarens klartecken och tak:** kör evals med standardmodellen; verifiera att minst 18 av 20 blir användbara appar och spara en sammanfattning av resultatet (andel, kostnad per byggsamtal, tid) i `evals/build/RESULTAT.md`
+- [x] 6.4 (Behövdes inte: 20 av 20 i första körningen.) Om under 18: förbättra systemprompten eller felbeskeden i det nya försöket utifrån felen per problem, och kör igen med nytt klartecken; verifiera med en ny körning
 
 ## 7. Klart när
 
-- [ ] 7.1 Visa klart-kriteriet: evals-resultatet med minst 18 av 20 och kostnad per byggsamtal, plus en genomgång lokalt där en medlem skapar en app med ord, ändrar den, ångrar och går tillbaka i versionslistan, och där nödbromsen, kvoten och gränsen syns; verifiera med skärmbilder och resultatfilen
-- [ ] 7.2 Uppdatera `docs/06-roadmap.md` och statussidan med uppmätt kostnad och vilken modell ägaren valde
+- [x] 7.1 Visa klart-kriteriet: evals-resultatet med minst 18 av 20 och kostnad per byggsamtal, plus en genomgång lokalt där en medlem skapar en app med ord, ändrar den, ångrar och går tillbaka i versionslistan, och där nödbromsen, kvoten och gränsen syns; verifiera med skärmbilder och resultatfilen
+- [x] 7.2 Uppdatera `docs/06-roadmap.md` och statussidan med uppmätt kostnad och vilken modell ägaren valde
 
 ## Workflow follow-up
 

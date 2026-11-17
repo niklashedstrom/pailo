@@ -173,16 +173,16 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
 <header>
   <p class="eyebrow">Pailo · fas 1 · Kärnan</p>
   <h1>Läget just nu</h1>
-  <p class="lede">Grunden, appschemat, hushållen och runtime är klara och finns på <a href="https://pailo.se">pailo.se</a>. Appen visar nu vilken giltig appbeskrivning som helst, och Drop och matschemat körs och delas mellan två konton. Nästa milstolpe är M4: AI:n ändrar appen. Innan mamma börjar behövs en egen e-posttjänst.</p>
-  <p class="updated">Uppdaterad 17 november 2026 · fyra av sex milstolpar klara · tre fabriksjobb klara</p>
+  <p class="lede">Fyra av sex milstolpar är klara och finns på <a href="https://pailo.se">pailo.se</a>. Nu kan ett hushåll beskriva en app eller en ändring med egna ord, och byggtjänsten gör om det till en giltig ny version som går att ångra. 20 av 20 testproblem gav en användbar app, till cirka 0,03 US$ per byggsamtal. Byggandet i molnet är pausat tills du slår på det. Nästa milstolpe är M5: intervjun och designen.</p>
+  <p class="updated">Uppdaterad 17 november 2026 · fem av sex milstolpar klara · tre fabriksjobb klara</p>
 
   <ol class="rail" aria-label="Milstolpar i fas 1">
     <li class="done"><div class="bar"></div><span class="code">M0</span><span class="name">Grunden</span></li>
     <li class="done"><div class="bar"></div><span class="code">M1</span><span class="name">Appschemat</span></li>
     <li class="done"><div class="bar"></div><span class="code">M2</span><span class="name">Data och behörighet</span></li>
     <li class="done"><div class="bar"></div><span class="code">M3</span><span class="name">Runtime</span></li>
-    <li class="next"><div class="bar"></div><span class="code">M4</span><span class="name">Byggtjänsten</span></li>
-    <li><div class="bar"></div><span class="code">M5</span><span class="name">Intervju och design</span></li>
+    <li class="done"><div class="bar"></div><span class="code">M4</span><span class="name">Byggtjänsten</span></li>
+    <li class="next"><div class="bar"></div><span class="code">M5</span><span class="name">Intervju och design</span></li>
   </ol>
 </header>
 
@@ -192,21 +192,22 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
     <div>
       <p class="eyebrow">Väntar på dig</p>
       <ul>
-        <li>Titta på namnformuläret på hushållssidan i mobilen, ingen har kontrollerat det i smal bredd</li>
         <li>Välj egen e-posttjänst, se öppna beslut nedan</li>
+        <li>Bestäm var AI-anropen får behandlas: arbetsytan Pailo står på USA/global</li>
+        <li>Välj modell för produktion; Opus 5.5 är förvalt och uppmätt</li>
       </ul>
     </div>
     <div>
       <p class="eyebrow">Nästa steg</p>
       <ul>
-        <li>Föreslå M4 med <code>/opsx:propose</code></li>
-        <li>Mät vad ett byggsamtal kostar innan något går live</li>
+        <li>Föreslå M5 med <code>/opsx:propose</code></li>
+        <li>Säg i systemprompten att bilder inte går än, och byt testproblem 15</li>
         <li>Fabrikens kö med <code>/factory next</code> när det finns tid över</li>
       </ul>
     </div>
     <div>
-      <p class="eyebrow">Klart när (M4)</p>
-      <p>Minst 90 % av 20 testproblem i vardagsspråk ger en giltig app, och kostnaden per byggsamtal är uppmätt.</p>
+      <p class="eyebrow">Klart när (M5, grind för fas 1)</p>
+      <p>Drop och matschemat byggs från noll i verktyget utan handpåläggning. Sedan bygger mamma sitt matschema med dig bredvid, utan att du rör tangentbordet.</p>
     </div>
   </div>
 </section>
@@ -289,23 +290,24 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
       </div>
     </details>
 
-    <details class="ms is-next" open>
-      <summary><span class="code">M4</span><span class="title"><h3>Byggtjänsten</h3><span>AI ändrar appen, varje ändring kan ångras</span></span><span class="pill next">Nästa</span></summary>
+    <details class="ms is-done">
+      <summary><span class="code">M4</span><span class="title"><h3>Byggtjänsten</h3><span>Önskemål med egna ord blir en ny version</span></span><span class="pill done">Klar 17 nov</span></summary>
       <div class="body">
         <ul class="items">
-          <li>Claude föreslår ändringar som JSON Patch mot beskrivningen</li>
-          <li>Varje ändring valideras och sparas som ny version</li>
-          <li>Ångra och återställ till tidigare version</li>
-          <li>Kvot, hastighetsgränser, kostnadslogg per hushåll, nödbroms</li>
-          <li>Önskemål som byggstenarna inte klarar sparas</li>
-          <li>20 testproblem i vardagsspråk med mätt kostnad</li>
+          <li class="x">Claude svarar med strukturerad output: en sammanfattning och en JSON Patch mot beskrivningen</li>
+          <li class="x">Varje ändring valideras och sparas som ny version; ett nytt försök med felen om svaret inte håller</li>
+          <li class="x">Ny app med egna ord, ångra och "Gå tillbaka hit" i versionslistan, utan AI och utan kvot</li>
+          <li class="x">Nödbroms (på från början), dygnstak, 10/30 i timmen, 20 per hushåll och månad, kostnadslogg</li>
+          <li class="x">Det som inte går får ett ärligt besked och sparas som önskemål</li>
+          <li class="x">Evals: 20 av 20 användbara appar, 0,028 US$ och 10,6 s per byggsamtal</li>
         </ul>
-        <p class="gate">Klart när: minst 90 % av testproblemen ger en giltig app och kostnaden per byggsamtal är uppmätt.</p>
+        <p class="gate">Klart när: minst 90 % av testproblemen ger en giltig app och kostnaden per byggsamtal är uppmätt. Uppfyllt med 20 av 20.</p>
+        <p class="links"><a href="https://github.com/niklashedstrom/pailo/pull/16">PR #16</a> · resultat i <code>evals/build/RESULTAT.md</code> · krav i <code>openspec/specs/app-builder</code>, <code>ai-usage-limits</code></p>
       </div>
     </details>
 
-    <details class="ms">
-      <summary><span class="code">M5</span><span class="title"><h3>Intervju och design</h3><span>Från vardagsproblem till färdig app</span></span><span class="pill todo">Planerad</span></summary>
+    <details class="ms is-next" open>
+      <summary><span class="code">M5</span><span class="title"><h3>Intervju och design</h3><span>Från vardagsproblem till färdig app</span></span><span class="pill next">Nästa</span></summary>
       <div class="body">
         <ul class="items">
           <li>Chatt med styrda frågor</li>
@@ -333,6 +335,18 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
           <td>Egen e-posttjänst för inloggningsmejl
             <span class="why">Supabase egen e-post når bara ditt Supabase-team och skickar få mejl. På gratisnivån går mejlen inte heller att få på svenska utan egen tjänst.</span></td>
           <td>Innan mamma börjar</td>
+        </tr>
+        <tr>
+          <td><span class="pill warn">Beslut</span></td>
+          <td>Var AI-anropen behandlas
+            <span class="why">Arbetsytan Pailo hos Anthropic står på USA och global inferens. Riktiga hushålls appbeskrivningar bör behandlas i EU om det går, och Anthropics villkor för API-data behöver läsas.</span></td>
+          <td>Innan riktiga användare bygger</td>
+        </tr>
+        <tr>
+          <td><span class="pill todo">Senare</span></td>
+          <td>Slå på byggandet i molnet
+            <span class="why">En egen nyckel för produktion i arbetsytan Pailo, som hemlighet i Supabase. Sätt dygnstak och kvoter och slå av nödbromsen. Se docs/03-arkitektur.md.</span></td>
+          <td>När mamma ska bygga</td>
         </tr>
         <tr>
           <td><span class="pill next">Risk</span></td>
@@ -408,10 +422,10 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
 <section aria-labelledby="nu-h">
   <h2 id="nu-h">I siffror</h2>
   <div class="numbers">
-    <div class="num"><b>143</b><span>databastester, varav 49 för isolering</span></div>
-    <div class="num"><b>317</b><span>tester i appen, schemat och skripten</span></div>
-    <div class="num"><b>7</b><span>tabeller med behörighet per hushåll</span></div>
-    <div class="num"><b>6</b><span>migreringar i molnet</span></div>
+    <div class="num"><b>189</b><span>databastester, varav 49 för isolering</span></div>
+    <div class="num"><b>410</b><span>tester i appen, schemat, skripten och byggtjänsten</span></div>
+    <div class="num"><b>10</b><span>tabeller med behörighet per hushåll</span></div>
+    <div class="num"><b>0,03 $</b><span>per byggsamtal, uppmätt</span></div>
   </div>
 </section>
 

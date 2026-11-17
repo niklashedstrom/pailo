@@ -66,14 +66,16 @@ Runtime känner bara till byggstenarna och visar vilken giltig beskrivning som h
 
 ### M4 · Byggtjänsten (vecka 5–7)
 
-- [ ] Edge Function som anropar Claude med strukturerad output och returnerar en patch (JSON Patch) mot beskrivningen
-- [ ] Validera varje patch med Zod innan den sparas som ny version i `app_versions`
-- [ ] Ångra och återställ till tidigare version
-- [ ] Kvot före anrop, hastighetsgränser, kostnadslogg per hushåll och global nödbroms
-- [ ] Gränskontroll: önskemål som byggstenarna inte klarar loggas i `wishes`
-- [ ] Evals: 20 testproblem i vardagsspråk som körs mot byggtjänsten, med andel giltiga patchar och kostnad per körning
+- [x] Edge Function som anropar Claude med strukturerad output och returnerar en patch (JSON Patch) mot beskrivningen
+- [x] Validera varje patch med Zod innan den sparas som ny version i `app_versions`
+- [x] Ångra och återställ till tidigare version
+- [x] Kvot före anrop, hastighetsgränser, kostnadslogg per hushåll och global nödbroms
+- [x] Gränskontroll: önskemål som byggstenarna inte klarar loggas i `wishes`
+- [x] Evals: 20 testproblem i vardagsspråk som körs mot byggtjänsten, med andel giltiga patchar och kostnad per körning
 
 **Klart när:** minst 90 % av testproblemen ger en giltig app, och kostnaden per byggsamtal är uppmätt.
+
+**Uppmätt 17 november 2026:** 20 av 20 testproblem gav en användbar app med `claude-opus-5-5` (`effort: medium`), till i snitt 0,028 US$ och 10,6 sekunder per byggsamtal. Se `evals/build/RESULTAT.md`. Byggandet i molnet är pausat tills ägaren sätter en nyckel och slår av nödbromsen.
 
 ### M5 · Intervju och design (vecka 7–8)
 
