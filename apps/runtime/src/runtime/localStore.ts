@@ -16,7 +16,7 @@ export function localStore(options: {
   storage: Pick<Storage, 'getItem' | 'setItem'> | null
   now?: () => Date
   newId?: () => string
-}): RecordStore & { readonly saved: boolean } {
+}): RecordStore & { readonly saved: boolean; current(): AppRecord[] } {
   const key = `pailo:${options.appId}:${options.exportedAt}`
   const now = options.now ?? (() => new Date())
   const newId = options.newId ?? (() => crypto.randomUUID())
@@ -47,12 +47,16 @@ export function localStore(options: {
     }
   }
 
+  const newestFirst = () => records.toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
+
   return {
     get saved() {
       return saved
     },
+    /** The records right now, newest first, without waiting. */
+    current: newestFirst,
     async listRecords() {
-      return records.toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
+      return newestFirst()
     },
     async createRecord(_appId: string, collection: string, data: RecordData) {
       const at = now().toISOString()

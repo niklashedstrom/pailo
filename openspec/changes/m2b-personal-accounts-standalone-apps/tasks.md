@@ -29,32 +29,32 @@
 
 ## 5. Runtime: API och datakälla
 
-- [ ] 5.1 `api.ts` utan hushåll: `listMyApps` (egna och delade, med ägarens namn), `appBySlug`, `appFace`, `listMembers(app)`, `updateDisplayName(app, name)`, `createInviteLink(app)` (länk till `/a/<kortnamn>/inbjudan#…`), `listInvites`, `revokeInvite`, `removeMember`, `leaveApp`, `buildApp(wish)`, `changeApp(app, wish)`, `remainingBuilds()` och `exportApp(app)`. Verifiera med `api.test.ts` mot lokal Supabase.
-- [ ] 5.2 `AppData`-gränssnittet enligt design beslut 9 med Supabase-implementationen, `AppScreen` och formulär flyttade dit, och `permissions.ts` med `owner`/`member`. Verifiera med befintliga runtime-tester (uppdaterade) och nya tester för ägarens rättigheter.
-- [ ] 5.3 Routern med `/`, `/app/<id>[/<vy>]`, `/a/<kortnamn>[/<vy>]` och `/a/<kortnamn>/inbjudan#…`, och `invite.ts` som sparar hemligheten och kortnamnet. Verifiera med `router.test.tsx` och `invite.test.ts`, även för okända och felaktiga adresser.
+- [x] 5.1 `api.ts` utan hushåll: `listMyApps` (egna och delade, med ägarens namn), `appBySlug`, `appFace`, `listMembers(app)`, `updateDisplayName(app, name)`, `createInviteLink(app)` (länk till `/a/<kortnamn>/inbjudan#…`), `listInvites`, `revokeInvite`, `removeMember`, `leaveApp`, `buildApp(wish)`, `changeApp(app, wish)`, `remainingBuilds()` och `exportApp(app)`. Verifiera med `api.test.ts` och med `scripts/src/integration/runtime-api.test.ts` mot lokal Supabase.
+- [x] 5.2 `AppData`-gränssnittet enligt design beslut 9 (heter `RecordStore` i koden, eftersom `AppData` redan är typen för beskrivning, poster och medlemmar) med Supabase-implementationen, `AppScreen` och formulär flyttade dit, och `permissions.ts` med `owner`/`member`. Verifiera med befintliga runtime-tester (uppdaterade) och nya tester för ägarens rättigheter.
+- [x] 5.3 Routern med `/`, `/app/<id>[/<vy>]`, `/a/<kortnamn>[/<vy>]` och `/a/<kortnamn>/inbjudan#…`, och `invite.ts` som sparar hemligheten och kortnamnet. Verifiera med `router.test.tsx` och `invite.test.ts`, även för okända och felaktiga adresser.
 
 ## 6. Verkstaden
 
-- [ ] 6.1 Ta bort `NameHousehold` och `HouseholdPage` och gör startsidan till Mina appar: egna appar, sedan delade med ägarens namn, tomt läge med fältet för en ny app, och ett nytt konto landar direkt där. Verifiera med `App.test.tsx`.
-- [ ] 6.2 Appen i verkstaden (`/app/<id>`): bygg- och ändringsfältet, ångra och versioner bara för ägaren, kvar av kvoten per person, och en länk "Öppna appen" till appens adress. Verifiera med tester för att en medlem som öppnar `/app/<id>` skickas till appens adress och inte ser byggfältet.
-- [ ] 6.3 Medlemmar per app i verkstaden: lista, bjud in (med texten om 3 dagar, en gång och just den här appen), se och återkalla inbjudningar och ta bort en medlem med bekräftelse. Verifiera med komponenttester.
-- [ ] 6.4 "Ladda ned appen" för ägaren, med en förklaring före nedladdningen att filen innehåller allas poster och fungerar utan nätverk. Verifiera med ett test att filen sätts ihop med `pailo-data` och att `<` i en post skrivs som `<`.
+- [x] 6.1 Ta bort `NameHousehold` och `HouseholdPage` och gör startsidan till Mina appar: egna appar, sedan delade med ägarens namn, tomt läge med fältet för en ny app, och ett nytt konto landar direkt där. Verifiera med `App.test.tsx`.
+- [x] 6.2 Appen i verkstaden (`/app/<id>`): bygg- och ändringsfältet, ångra och versioner bara för ägaren, kvar av kvoten per person, och en länk "Öppna appen" till appens adress. Verifiera med tester för att en medlem som öppnar `/app/<id>` skickas till appens adress och inte ser byggfältet.
+- [x] 6.3 Medlemmar per app i verkstaden: lista, bjud in (med texten om 3 dagar, en gång och just den här appen), se och återkalla inbjudningar och ta bort en medlem med bekräftelse. Verifiera med komponenttester.
+- [x] 6.4 "Ladda ned appen" för ägaren, med en förklaring före nedladdningen att filen innehåller allas poster och fungerar utan nätverk. Verifiera med ett test att filen sätts ihop med `pailo-data` och att `<` i en post skrivs som `<`.
 
 ## 7. Appens egen adress
 
-- [ ] 7.1 Ramen för `/a/<kortnamn>` utan Pailo enligt design beslut 6: titel, favicon och tema från appen, menyn (byta namn, lämna, logga ut) och knappen "Ändra" bara för ägaren. Verifiera med tester att texten "Pailo" inte finns i den renderade sidan för en medlem.
-- [ ] 7.2 Inloggning i appens stil via `app_face`, med `emailRedirectTo` tillbaka till samma adress, och lägg till `/a/**` i `config.toml`. Verifiera med tester för utloggad, okänt kortnamn och inte medlem, och manuellt lokalt med Inbucket att länken i mejlet leder tillbaka till appen.
-- [ ] 7.3 Inbjudan på appens adress: logga in, gå med och visa appen. Visa ett vänligt besked vid ogiltig länk. Verifiera med tester och manuellt lokalt med två konton.
+- [x] 7.1 Ramen för `/a/<kortnamn>` utan Pailo enligt design beslut 6: titel, favicon och tema från appen, menyn (byta namn, lämna, logga ut) och knappen "Ändra" bara för ägaren. Verifiera med tester att texten "Pailo" inte finns i den renderade sidan för en medlem.
+- [x] 7.2 Inloggning i appens stil via `app_face`, med `emailRedirectTo` tillbaka till samma adress, och se till att `/a/**` är tillåtet i `config.toml` (det täcks redan av `localhost:5173/**` lokalt och `pailo.se/**` i molnet). Verifiera med tester för utloggad, okänt kortnamn och inte medlem, och manuellt lokalt med Inbucket att länken i mejlet leder tillbaka till appen.
+- [x] 7.3 Inbjudan på appens adress: logga in, gå med och visa appen. Visa ett vänligt besked vid ogiltig länk. Verifiera med tester och lokalt med två konton (gjort via runtime-API:t mot lokal Supabase i `runtime-api.test.ts`; flödet i webbläsaren prövas i klart-kontrollen 10.3).
 
 ## 8. Installera appen
 
-- [ ] 8.1 Vektorikoner från Lucide för de 18 ikonnamnen, med licenstext, och ett `prebuild`-skript med `@resvg/resvg-js` som ritar 192 och 512 pixlar per ikon och palett till `apps/runtime/public/icons/` (ignoreras av git). Verifiera med ett test att alla 216 filer skapas och att varje ikonnamn i schemat har en vektor.
+- [x] 8.1 Vektorikoner från Lucide för de 18 ikonnamnen (från paketet `lucide-static`, med licenstexten bredvid ikonerna), och ett `prebuild`-skript med `@resvg/resvg-js` som ritar 192 och 512 pixlar per ikon och palett till `apps/runtime/public/icons/` (ignoreras av git). Verifiera med ett test att alla 216 filer skapas och att varje ikonnamn i schemat har en vektor.
 - [ ] 8.2 Omskrivningen `/a/:slug/manifest.webmanifest` i `vercel.json` och länkarna till manifest och `apple-touch-icon` på `/a/`-sidor. Verifiera i förhandsvisningen från Vercel att manifestet laddas från appens adress och att Chrome visar att appen går att installera.
 
 ## 9. Den fristående filen
 
-- [ ] 9.1 Ingången `standalone.html` med `vite-plugin-singlefile`, den lokala `AppData` med `localStorage` och meta-taggen för CSP enligt design beslut 10. Verifiera med ett test att den byggda filen är en enda HTML-fil utan `supabase`, `pailo.se` eller funktionsadresser.
-- [ ] 9.2 Ett test som öppnar en fristående fil med Drop och matschemat i jsdom (eller Playwright om det redan finns), skapar, ändrar och tar bort en post, laddar om och ser ändringen. Verifiera att testet är grönt.
+- [x] 9.1 Ingången `standalone.html` med `vite-plugin-singlefile`, den lokala `AppData` med `localStorage` och meta-taggen för CSP enligt design beslut 10. Verifiera med ett test att den byggda filen är en enda HTML-fil utan `supabase`, `pailo.se` eller funktionsadresser.
+- [x] 9.2 Ett test som öppnar en fristående fil med Drop och matschemat i jsdom (eller Playwright om det redan finns), skapar, ändrar och tar bort en post, laddar om och ser ändringen. Verifiera att testet är grönt.
 - [ ] 9.3 Manuell kontroll: ladda ned matschemat, stäng av nätverket, öppna filen, lägg till en måltid, stäng och öppna igen. Skriv resultatet i PR:en.
 
 ## 10. Dokument, utrullning och klart-kontroll

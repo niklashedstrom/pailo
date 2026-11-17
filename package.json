@@ -11,8 +11,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "npm run dev -w @pailo/runtime",
-    "build": "npm run build -w @pailo/runtime",
+    "dev": "npm run icons -w @pailo/scripts && npm run dev -w @pailo/runtime",
+    "build": "npm run icons -w @pailo/scripts && npm run build -w @pailo/runtime",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "openspec": "openspec",

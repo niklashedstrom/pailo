@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && vite build -c vite.standalone.config.ts",
     "preview": "vite preview",
     "lint": "oxlint",
     "typecheck": "tsc -b",
@@ -29,6 +29,7 @@
     "oxlint": "^1.89.0",
     "typescript": "~7.0.2",
     "vite": "^8.3.5",
+    "vite-plugin-singlefile": "2.3.4",
     "vitest": "^5.1.0"
   }
 }

@@ -79,7 +79,7 @@ export default function WorkshopApp({ api, appId, viewId, userId, now }: Props) 
         <Link to={HOME}>← Mina appar</Link>
       </p>
       <h1>{app.description.name}</h1>
-      <p className="own-address">
+      <p className="own-address-link">
         <Link to={{ kind: 'app', slug: app.slug }}>Öppna appen</Link>
         <span className="hint"> Så här ser den ut för dem du delar den med.</span>
       </p>

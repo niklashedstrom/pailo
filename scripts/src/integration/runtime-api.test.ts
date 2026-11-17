@@ -76,7 +76,7 @@ describe('the runtime API, shared per app', () => {
 
   it('lets both use the app and see each other\'s records', async () => {
     const lasagne = await apis.anna.createRecord(appId, 'ratter', { namn: 'Lasagne' })
-    await apis.bertil.createRecord(appId, 'maltider', { dag: '2026-11-18', ratt: lasagne.id, lagar: { member: ids.bertil } })
+    await apis.bertil.createRecord(appId, 'maltider', { datum: '2026-11-18', ratt: lasagne.id, lagar: { member: ids.bertil } })
     expect((await apis.anna.listRecords(appId)).map((r) => r.collection).sort()).toEqual(['maltider', 'ratter'])
     expect((await apis.bertil.listMembers(appId)).map((m) => [m.displayName, m.role])).toEqual([
       ['Anna', 'owner'],

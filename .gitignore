@@ -15,3 +15,6 @@ factory/jobs
 
 # Eval results (contain usage and cost per run)
 evals/build/results/
+
+# Install icons, drawn at build time by scripts/src/render-icons.ts
+apps/runtime/public/icons/
