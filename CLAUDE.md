@@ -1,15 +1,17 @@
 # CLAUDE.md
 
-Pailo is an AI app builder for non-technical people and households (Sweden first). Users describe a problem; an AI interview leads to an app assembled from fixed building blocks. Read `README.md` and `docs/` before making product or architecture decisions — they are the source of truth.
+Pailo is an AI app builder for non-technical people and their families (Sweden first). Users describe a problem; an AI interview leads to an app assembled from fixed building blocks. Read `README.md` and `docs/` before making product or architecture decisions — they are the source of truth.
 
 ## Non-negotiable principles
 
 - **No free code generation.** A user app is a JSON app description validated by a Zod schema (`packages/schema`). The AI only produces JSON Patch operations against that description. Every patch is validated and saved as a new version in `app_versions`; nothing writes to an app directly.
 - **One runtime renders every app** (`apps/runtime`). Never generate per-app code, routes or tables.
 - **All app data lives in one generic `records` table (jsonb).** New apps never need new tables.
-- **RLS per household on every table**, with pgTAP tests in CI proving household A can't read or write B's data. A table without RLS and tests is not done.
+- **Accounts are per person; apps are shared per app.** There is no household. The owner of an app invites the people who use it. (Households are removed in M2b, see `docs/06-roadmap.md`; until then the code still has them.)
+- **RLS per app membership on every table**, with pgTAP tests in CI proving person A can't read or write an app they aren't a member of. A table without RLS and tests is not done.
+- **Every app is self-contained.** It runs at its own address with its own name, icon and install, shows no Pailo UI, and can be downloaded as a standalone package (the shared runtime + its description + its records) that works offline without Pailo. Pailo itself is only the workshop where apps are built and changed.
 - **No executable user content.** Render only through our React components, never raw HTML. Sanitize links.
-- **Claude API key never reaches the client.** AI calls go through Supabase Edge Functions with quota check, rate limits and cost logging per household *before* the call.
+- **Claude API key never reaches the client.** AI calls go through Supabase Edge Functions with quota check, rate limits and cost logging per person *before* the call.
 - **No tech words in the UI** (hosting, database, deploy, git). UI copy is Swedish.
 - Every change to an app must be undoable.
 
