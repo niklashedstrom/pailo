@@ -67,7 +67,9 @@ describe('signing in to Pailo', () => {
 describe('my apps', () => {
   it('lists my own apps first, then the ones shared with me with the owner, and nobody else\'s', async () => {
     setup()
-    const own = within(await screen.findByRole('region', { name: 'Appar du har byggt' }))
+    // Wait for the apps, not just the section: it is there before they load.
+    await screen.findByRole('link', { name: 'Drop' })
+    const own = within(screen.getByRole('region', { name: 'Appar du har byggt' }))
     expect(own.getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual([
       '/a/drop-aaaaaa',
       '/app/a-drop',
