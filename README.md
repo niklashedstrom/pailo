@@ -8,7 +8,7 @@ Första användaren är mamma, och hennes första app är familjens matschema.
 
 ## Status
 
-M0 (grunden), M1 (appschemat), M2 (hushåll, inloggning och behörighet) och M3 (runtime) är klara och Pailo finns på https://pailo.se. Runtime visar vilken giltig appbeskrivning som helst med vyer, formulär och tema byggda av byggstenarna. Nästa steg är M4 (byggtjänsten). Kraven finns i [openspec/specs](openspec/specs). Plan: [docs/06-roadmap.md](docs/06-roadmap.md).
+M0 (grunden), M1 (appschemat), M2 (hushåll, inloggning och behörighet), M3 (runtime) och M4 (byggtjänsten) är klara och Pailo finns på https://pailo.se. Ett hushåll beskriver en app eller en ändring med egna ord, byggtjänsten gör om det till en giltig ny version av appbeskrivningen, och allt kan ångras. Byggandet i molnet är pausat tills ägaren slår på det. Nästa steg är M5 (intervju och design). Kraven finns i [openspec/specs](openspec/specs). Plan: [docs/06-roadmap.md](docs/06-roadmap.md).
 
 ## Dokumentation
 
@@ -56,7 +56,7 @@ Länken i mejlet måste öppnas i samma webbläsare som bad om den. `supabase db
 
 ### Prova en app lokalt
 
-Pailo har inga färdiga appar; användarnas appar byggs av byggstenarna (från M4 av byggtjänsten). För att prova runtime innan dess kan du lägga in en handskriven beskrivning i ett hushåll i den **lokala** databasen. Verktyget validerar beskrivningen först och vägrar att skriva till molnet.
+Pailo har inga färdiga appar; användarnas appar byggs av byggstenarna, av byggtjänsten. För att prova runtime utan byggtjänsten kan du lägga in en handskriven beskrivning i ett hushåll i den **lokala** databasen. Verktyget validerar beskrivningen först och vägrar att skriva till molnet.
 
 1. Logga in lokalt och skapa ett hushåll enligt stegen ovan.
 2. Hitta hushållets id i Supabase Studio på http://127.0.0.1:55423 (tabellen `households`), eller med
