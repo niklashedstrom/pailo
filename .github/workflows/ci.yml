@@ -42,8 +42,8 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 2.101.0
-      - name: Start local database and apply migrations
-        run: supabase db start
+      - name: Start the local stack and apply migrations
+        run: supabase start -x imgproxy,studio,mailpit,vector,logflare,realtime,storage-api,postgres-meta,supavisor
       - name: Run pgTAP tests
         run: supabase test db
       - uses: actions/setup-node@v5
@@ -51,14 +51,15 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - name: Start the rest of the local stack and the server functions
+      - name: Start the server functions
         run: |
-          supabase start -x imgproxy,studio,inbucket,vector,analytics,realtime,storage,meta
           supabase functions serve --env-file supabase/functions/test.env > functions.log 2>&1 &
           for i in $(seq 1 60); do
-            curl -sf -o /dev/null -X OPTIONS http://127.0.0.1:55421/functions/v1/build && break
+            if curl -sf -o /dev/null -X OPTIONS http://127.0.0.1:55421/functions/v1/build; then exit 0; fi
             sleep 2
           done
+          echo "The server functions did not start"
+          exit 1
       - name: Test the build service with a fake Claude
         run: npm run test:integration
       - name: Server function logs
