@@ -25,7 +25,7 @@
 - [x] 4.1 `build` och `restore` utan `householdId`: ny app med personen som ägare, och ändring och återställning bara för ägaren, med `rate-app` i stället för `rate-household`. Verifiera med funktionstesterna mot lokal Supabase och låtsas-Claude för: ägare lyckas, medlem nekas, utomstående nekas och utloggad nekas.
 - [x] 4.2 `app-manifest` (utan JWT) enligt design beslut 7. Verifiera med ett test att svaret har `start_url` och `scope` `/a/<kortnamn>/`, appens namn och ikonsökvägar, att det är `404` för okänt kortnamn, och att svaret inte innehåller något annat från beskrivningen.
 - [x] 4.3 `export` enligt design beslut 10. Verifiera med test: ägaren får namn, beskrivning, poster och medlemmarnas visningsnamn och en rad i `app_exports`; medlem och utomstående nekas utan att någon rad skrivs.
-- [ ] 4.4 Lägg till de nya funktionerna i utrullningen och i CI:s Deno-kontroll. Verifiera att CI är grönt och att utrullningsjobbet listar `app-manifest` och `export`.
+- [x] 4.4 Lägg till de nya funktionerna i utrullningen och i CI:s Deno-kontroll. Verifiera att CI är grönt och att utrullningsjobbet listar `app-manifest` och `export`.
 
 ## 5. Runtime: API och datakälla
 
