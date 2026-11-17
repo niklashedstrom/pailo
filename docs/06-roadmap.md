@@ -57,7 +57,6 @@ Runtime känner bara till byggstenarna och visar vilken giltig beskrivning som h
 
 ### M3b · Runtime, del 2 (när den behövs, blockerar inte M4)
 
-- [ ] PWA som går att installera på mobilen
 - [ ] Dela-meny via Web Share Target och bokmärkesknapp med begränsad, återkallbar token
 - [ ] Påminnelser: schemalagd Edge Function som skickar mejl, web push om tiden räcker
 - [ ] Bilder: privat lagring, signerade länkar, kontroll av filtyp och storlek
@@ -75,7 +74,20 @@ Runtime känner bara till byggstenarna och visar vilken giltig beskrivning som h
 
 **Klart när:** minst 90 % av testproblemen ger en giltig app, och kostnaden per byggsamtal är uppmätt.
 
-**Uppmätt 17 november 2026:** 20 av 20 testproblem gav en användbar app med `claude-opus-5-5` (`effort: medium`), till i snitt 0,028 US$ och 10,6 sekunder per byggsamtal. Se `evals/build/RESULTAT.md`. Byggandet i molnet är pausat tills ägaren sätter en nyckel och slår av nödbromsen.
+**Uppmätt 17 november 2026:** 20 av 20 testproblem gav en användbar app med `claude-opus-5-5` (`effort: medium`), till i snitt 0,028 US$ och 10,6 sekunder per byggsamtal. Se `evals/build/RESULTAT.md`. Byggandet slogs på i molnet 17 november 2026 med standardgränserna.
+
+### M2b · Konton per person och fristående appar (före M5)
+
+**Beslut 17 november 2026:** hushållet tas bort som enhet. Var och en loggar in som sig själv, och en app delas med dem som ska använda den. Varje app står på egna ben och kan köras utan Pailo.
+
+- [ ] Datamodell: `app_members` (ägare och medlemmar) ersätter `households` och `members`, och en inbjudan gäller en app
+- [ ] RLS per appmedlemskap på varje tabell, med pgTAP-tester som bevisar att person A inte når B:s appar
+- [ ] Kvot, hastighetsgränser och kostnadslogg per person i stället för per hushåll
+- [ ] Varje app på egen adress med eget namn, ikon, tema och installerbart PWA-manifest, utan Pailo-meny, och inloggning i appens egen stil
+- [ ] Pailo som verkstad: mina appar, skapa, ändra, versioner och bjuda in
+- [ ] Export: ladda ned appen som fristående paket (runtime, beskrivning och poster) som fungerar offline utan server
+
+**Klart när:** två personer med egna konton delar matschemat på dess egen adress utan att se Pailo, en tredje person når det inte (bevisat av tester), och det nedladdade paketet fungerar utan nätverk.
 
 ### M5 · Intervju och design (vecka 7–8)
 

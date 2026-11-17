@@ -3,7 +3,7 @@
 Varje användarapp är en strukturerad appbeskrivning (JSON) i databasen, inte kod. Vi driftar en enda runtime, oavsett hur många appar som finns.
 
 ```
-Användare ──► Intervju (chatt i runtime)
+Användare ──► Pailo, verkstaden (intervju, ändringar, versioner)
                  │
                  ▼
          Byggtjänst (Supabase Edge Function)
@@ -14,21 +14,29 @@ Användare ──► Intervju (chatt i runtime)
            5. spara som ny version (app_versions) + kostnadslogg
                  │
                  ▼
-         Supabase Postgres (EU, RLS per hushåll)
-           households · members · apps · app_versions
+         Supabase Postgres (EU, RLS per appmedlemskap)
+           apps · app_members · app_versions
            records (jsonb) · invites · wishes
                  │
                  ▼
          Runtime (Vite + React + TS, PWA på Vercel)
-           renderar alla appar från sin beskrivning
+           varje app på egen adress, utan Pailo runt omkring
+                 │
+                 ▼
+         Exportpaket (runtime + beskrivning + poster)
+           körs offline eller på valfri hosting, utan Pailo
 ```
+
+**Beslut 17 november 2026:** hushållet tas bort. Konton är per person, en app delas med dem som ägaren bjuder in, och varje app står på egna ben. Det genomförs i M2b (se [06-roadmap.md](06-roadmap.md)). Tills dess bygger databasen och byggtjänsten fortfarande på `households` och `members`, som beskrivs nedan där det gäller.
 
 AI:n får aldrig skriva direkt till en app. Varje ändring valideras mot schemat och sparas som en ny version, så ångra och "gå tillbaka till i tisdags" ingår från start.
 
 ## Delar
 
 - **Appbeskrivning** (`packages/schema`): Zod-schema för samlingar och fält, vyer, inmatning, personer och roller, påminnelser och tema. Har `schemaVersion` och migreringsfunktioner så att gamla appar fungerar när schemat växer.
-- **Runtime** (`apps/runtime`): en app som renderar alla användarappar från beskrivningen. Vyer, formulär genererade från fält, tema-tokens, PWA, Web Share Target, bokmärkesknapp.
+- **Runtime** (`apps/runtime`): en app som renderar alla användarappar från beskrivningen. Varje app öppnas på sin egen adress (till exempel `pailo.se/a/<app>`) med eget namn, ikon, tema och PWA-manifest, och visar ingen Pailo-meny. Inloggningen sker i appens egen stil. Vyer, formulär genererade från fält, tema-tokens, Web Share Target, bokmärkesknapp.
+- **Pailo, verkstaden:** där man skapar appar, ändrar dem i samtal, ser versioner och bjuder in. Från en app leder en diskret länk "Ändra appen" hit, bara för den som får ändra.
+- **Export:** varje app kan laddas ned som ett fristående paket: samma runtime som statiska filer, appbeskrivningen och appens poster som JSON. Paketet sparar data i webbläsaren, behöver ingen server och fungerar offline. Det är för en person på en enhet; delning mellan personer och byggandet kräver Pailo. Paketet innehåller ingen kod som genereras per app.
 - **Byggtjänst** (Edge Functions `build` och `restore`, kärnan i `packages/schema/src/build`): Claude → strukturerad output → JSON Patch → validering → ny version. Inga andra verktyg än att föreslå en patch. Se avsnittet om byggtjänsten nedan.
 - **Data:** generisk `records`-tabell med jsonb. Nya appar kräver aldrig nya tabeller. Fältvärdena har ett fast format per fälttyp, och runtime kontrollerar dem med `recordDataSchema` innan de sparas:
 
@@ -52,11 +60,11 @@ AI:n får aldrig skriva direkt till en app. Varje ändring valideras mot schemat
 - Supabase: Postgres, Auth, RLS, Edge Functions
 - GitHub Actions: lint, typkontroll, tester, Supabase-migreringar
 - **Eget Supabase-projekt** för det här, skilt från hobbyprojekten, med data i EU
-- **Kostnadsmätning:** varje AI-anrop loggas med tokens och hushåll
+- **Kostnadsmätning:** varje AI-anrop loggas med tokens och personen som bygger (hushåll till M2b)
 
 ## Byggtjänsten
 
-Ett önskemål går så här, och inget steg kan hoppas över:
+Ett önskemål går så här, och inget steg kan hoppas över. Det beskrivs som det byggdes i M4; i M2b byts hushållet mot personen som bygger (kvot, gränser och kostnadslogg) och appens medlemmar (behörighet).
 
 1. **Inloggning och hushåll.** `build` tar emot `{ householdId, appId?, wish }` med personens inloggning. En ändring kräver att appen hör till det hushåll personen anger.
 2. **Reservation i databasen.** `reserve_ai_call` kontrollerar under ett lås, i ordning: nödbromsen, dygnstaket (dagens kostnad plus pågående anrop gånger en uppskattning), längden (högst 2 000 tecken), 10 i timmen per person, 30 i timmen per hushåll och månadskvoten (20 om inget annat är satt). Stoppas önskemålet anropas inte Claude och inget räknas.
@@ -73,7 +81,7 @@ Ett önskemål går så här, och inget steg kan hoppas över:
 
 ### Slå på och av byggandet
 
-Byggandet är pausat tills ägaren slår på det. I molnet görs det med Supabase SQL-editor eller `psql`:
+Byggandet slogs på i molnet 17 november 2026 med standardgränserna: dygnstak 2 US$, 0,25 US$ uppskattat per pågående anrop och 20 byggsamtal per månad. Arbetsytan Pailo hos Anthropic har dessutom ett tak på 20 US$ i månaden. Nyckeln ligger som hemlighet `ANTHROPIC_API_KEY` i Supabase. Gränserna ändras med Supabase SQL-editor eller `psql`:
 
 ```sql
 -- Slå på (efter att nyckeln är satt med: supabase secrets set ANTHROPIC_API_KEY=...)
@@ -90,3 +98,10 @@ select sum(cost_usd) from public.ai_calls where started_at >= date_trunc('day', 
 ```
 
 Utan nyckel svarar `build` att byggandet är pausat, även om `paused` är av.
+
+## E-post
+
+Inloggningsmejlen skickas via Brevo (EU-baserad, gratisnivå 300 mejl om dagen) från `no-reply@pailo.se` med avsändarnamnet Pailo, över SMTP till `smtp-relay.brevo.com` port 587. Inställningen finns bara i Supabase (Authentication → SMTP), inte i repot. Lokalt fångar Mailpit mejlen.
+
+- **DNS hos Simply.com:** TXT `brevo-code:…` på `pailo.se`, CNAME `brevo1._domainkey` och `brevo2._domainkey` till Brevos DKIM-nycklar, och TXT `_dmarc` med `p=none`.
+- **SMTP-nyckeln** `pailo-supabase-sign-in` har ett slutdatum (se Brevo, högst ett år) och slutar dessutom gälla om inget mejl skickas på 90 dagar. Skapa en ny i Brevo under SMTP & API och byt lösenordet i Supabase innan dess, annars kan ingen logga in.

@@ -9,12 +9,12 @@ V1 har fem byggstenar. Det är det minsta som räcker för att bygga både Drop 
 | Data | Samlingar av saker med egna fält (text, datum, bild, länk, person, val) | v1 |
 | Vyer | Lista, kort, kalender, översikt | v1 |
 | Inmatning | Formulär, mobilens dela-meny, bokmärkesknapp | v1 |
-| Personer | Hushåll, inbjudan, vem gjorde vad, behörigheter | v1 |
+| Personer | Konto per person, inbjudan till en app, vem gjorde vad, behörigheter | v1 |
 | Tid | Påminnelser, återkommande saker, scheman | v1 |
 | Utskick | Push-notiser, veckosammanfattning på mejl | Senare |
 | Logik | Enkla regler: "om X, gör Y" | Senare |
 | Inmatning, fler | Mejla in, foto som tolkas av AI | Senare |
-| Delning mellan hushåll | Dela en app utan data med andra | Senare |
+| Dela som mall | Dela en app utan data med andra | Senare |
 
 **Klart-kriterium för v1:** Drop och mammas matschema går att bygga helt i verktyget, utan handpåläggning.
 
@@ -27,7 +27,7 @@ Användaren beskriver ett problem med egna ord. Sedan leder AI:n hen genom ett s
 3. **Gränskontroll:** om något inte går säger AI:n det nu och föreslår närmaste lösning. Önskan loggas.
 4. **Förslag:** AI:n föreslår 2–3 saker användaren inte bad om, till exempel bokmärkesknappen i Drop. Användaren väljer.
 5. **Design:** användarens egen app visas i tre stilar, till exempel lugn, lekfull och stram. Användaren pekar och justerar med ord: "grönare", "luftigare", "större text".
-6. **Klar:** appen fungerar direkt och kan delas med hushållet.
+6. **Klar:** appen fungerar direkt på sin egen adress, kan installeras på mobilen och delas med dem som ska använda den.
 7. **Ändringar:** sker i samma samtalsform. Varje ändring blir en version som kan ångras.
 
 ## Designsystemet

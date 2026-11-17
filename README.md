@@ -8,7 +8,7 @@ Första användaren är mamma, och hennes första app är familjens matschema.
 
 ## Status
 
-M0 (grunden), M1 (appschemat), M2 (hushåll, inloggning och behörighet), M3 (runtime) och M4 (byggtjänsten) är klara och Pailo finns på https://pailo.se. Ett hushåll beskriver en app eller en ändring med egna ord, byggtjänsten gör om det till en giltig ny version av appbeskrivningen, och allt kan ångras. Byggandet i molnet är pausat tills ägaren slår på det. Nästa steg är M5 (intervju och design). Kraven finns i [openspec/specs](openspec/specs). Plan: [docs/06-roadmap.md](docs/06-roadmap.md).
+M0 (grunden), M1 (appschemat), M2 (hushåll, inloggning och behörighet), M3 (runtime) och M4 (byggtjänsten) är klara och Pailo finns på https://pailo.se. Man beskriver en app eller en ändring med egna ord, byggtjänsten gör om det till en giltig ny version av appbeskrivningen, och allt kan ångras. Byggandet i molnet är på sedan 17 november 2026. Nästa steg är M2b (konton per person i stället för hushåll, och fristående appar som fungerar utan Pailo) och sedan M5 (intervju och design). Stegen nedan beskriver hushållen som de fungerar fram till M2b. Kraven finns i [openspec/specs](openspec/specs). Plan: [docs/06-roadmap.md](docs/06-roadmap.md).
 
 ## Dokumentation
 
