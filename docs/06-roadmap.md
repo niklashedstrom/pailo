@@ -48,10 +48,10 @@ Fas 1 delas i sex milstolpar (M3 i två delar), var och en med ett tydligt klart
 
 Runtime känner bara till byggstenarna och visar vilken giltig beskrivning som helst. Inga färdiga appar finns i produkten; Drop och matschemat är provexempel.
 
-- [ ] Rendera vyerna lista, kort, kalender och översikt från en beskrivning
-- [ ] Generera formulär från fälten, med skapa, ändra och ta bort mot `records`
-- [ ] Tema-tokens: palett, typsnitt, avstånd, rundning, täthet, plus tre förinställda stilar
-- [ ] Testbeskrivning som använder varje byggsten, och ett lokalt utvecklarskript som lägger in beskrivningar
+- [x] Rendera vyerna lista, kort, kalender och översikt från en beskrivning
+- [x] Generera formulär från fälten, med skapa, ändra och ta bort mot `records`
+- [x] Tema-tokens: palett, typsnitt, avstånd, rundning, täthet, plus tre förinställda stilar
+- [x] Testbeskrivning som använder varje byggsten, och ett lokalt utvecklarskript som lägger in beskrivningar
 
 **Klart när:** Drop och matschemat körs i runtime från de handskrivna beskrivningarna och delas mellan två konton.
 
