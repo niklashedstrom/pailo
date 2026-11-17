@@ -1,6 +1,6 @@
 ---
 name: factory-review-ux
-description: Factory reviewer. UX review of one Pailo job from the point of view of a non-technical Swedish household user. Writes round-N/review-ux.md.
+description: Factory reviewer. UX review of one Pailo job from the point of view of a non-technical Swedish person using an app with their family. Writes round-N/review-ux.md.
 tools: Read, Grep, Glob, Bash, Write
 model: sonnet
 ---

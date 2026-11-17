@@ -27,16 +27,22 @@ Användare ──► Pailo, verkstaden (intervju, ändringar, versioner)
            körs offline eller på valfri hosting, utan Pailo
 ```
 
-**Beslut 17 november 2026:** hushållet tas bort. Konton är per person, en app delas med dem som ägaren bjuder in, och varje app står på egna ben. Det genomförs i M2b (se [06-roadmap.md](06-roadmap.md)). Tills dess bygger databasen och byggtjänsten fortfarande på `households` och `members`, som beskrivs nedan där det gäller.
+**Beslut 17 november 2026, genomfört i M2b:** det finns inga hushåll. Konton är per person, en app delas med dem som ägaren bjuder in (`app_members` med rollen `owner` eller `member`), och varje app står på egna ben.
 
 AI:n får aldrig skriva direkt till en app. Varje ändring valideras mot schemat och sparas som en ny version, så ångra och "gå tillbaka till i tisdags" ingår från start.
 
 ## Delar
 
 - **Appbeskrivning** (`packages/schema`): Zod-schema för samlingar och fält, vyer, inmatning, personer och roller, påminnelser och tema. Har `schemaVersion` och migreringsfunktioner så att gamla appar fungerar när schemat växer.
-- **Runtime** (`apps/runtime`): en app som renderar alla användarappar från beskrivningen. Varje app öppnas på sin egen adress (till exempel `pailo.se/a/<app>`) med eget namn, ikon, tema och PWA-manifest, och visar ingen Pailo-meny. Inloggningen sker i appens egen stil. Vyer, formulär genererade från fält, tema-tokens, Web Share Target, bokmärkesknapp.
-- **Pailo, verkstaden:** där man skapar appar, ändrar dem i samtal, ser versioner och bjuder in. Från en app leder en diskret länk "Ändra appen" hit, bara för den som får ändra.
-- **Export:** varje app kan laddas ned som ett fristående paket: samma runtime som statiska filer, appbeskrivningen och appens poster som JSON. Paketet sparar data i webbläsaren, behöver ingen server och fungerar offline. Det är för en person på en enhet; delning mellan personer och byggandet kräver Pailo. Paketet innehåller ingen kod som genereras per app.
+- **Runtime** (`apps/runtime`): en app som renderar alla användarappar från beskrivningen. Den har tre sorters adresser, samma för alla appar:
+  - `/` är verkstaden, med mina appar;
+  - `/app/<id>` är en egen app i verkstaden;
+  - `/a/<kortnamn>` är appen på sin egen adress, till exempel `pailo.se/a/matschema-k3f9qa`.
+
+  På sin egen adress har appen eget namn, ikon och tema och visar ingen Pailo-meny. Inloggningen och inbjudan sker där i appens egen stil. Kortnamnet bildas av appens namn och sex slumpade tecken och ändras aldrig. Vyer, formulär genererade från fält och tema-tokens; Web Share Target och bokmärkesknapp kommer i M3b.
+- **Installera:** varje app har ett eget manifest på `/a/<kortnamn>/manifest.webmanifest`. Vercel skickar den adressen vidare till funktionen `app-manifest`, som bara läser appens namn, ikon och tema via `app_face`. Ikonerna ritas vid bygget (`npm run icons -w @pailo/scripts`) för varje ikon och palett, med Lucides teckningar.
+- **Pailo, verkstaden:** där man skapar appar, ändrar dem med ord, ser versioner, delar appen och laddar ned den. Från appens egen adress leder "Ändra appen" i menyn hit, bara för ägaren.
+- **Export:** ägaren kan ladda ned appen som en enda HTML-fil. Bygget gör `standalone.html`: samma runtime med allt inbakat i en fil (`vite.standalone.config.ts`). Funktionen `export` loggar nedladdningen och lämnar ut beskrivningen, posterna och medlemmarnas namn, och verkstaden lägger in dem i filen. Filen sparar ändringar i webbläsaren, behöver ingen server och fungerar offline. Den är för en person på en enhet; delning mellan personer och byggandet kräver Pailo. Filen innehåller ingen kod som genereras per app.
 - **Byggtjänst** (Edge Functions `build` och `restore`, kärnan i `packages/schema/src/build`): Claude → strukturerad output → JSON Patch → validering → ny version. Inga andra verktyg än att föreslå en patch. Se avsnittet om byggtjänsten nedan.
 - **Data:** generisk `records`-tabell med jsonb. Nya appar kräver aldrig nya tabeller. Fältvärdena har ett fast format per fälttyp, och runtime kontrollerar dem med `recordDataSchema` innan de sparas:
 
@@ -51,7 +57,7 @@ AI:n får aldrig skriva direkt till en app. Varje ändring valideras mot schemat
   | bild | inget än (bilder kommer i M3b) |
 
   Ett fält utan värde saknas i posten. Ett värde som inte följer formatet visas som tomt, utan att resten av posten påverkas.
-- **Inga färdiga appar:** runtime känner bara till byggstenarna. Innan byggtjänsten finns lägger utvecklare in handskrivna beskrivningar i den lokala databasen med `npm run dev:app` (se README), som validerar beskrivningen och vägrar skriva till molnet.
+- **Inga färdiga appar:** runtime känner bara till byggstenarna. För att prova runtime utan byggtjänsten lägger utvecklare in handskrivna beskrivningar i den lokala databasen med `npm run dev:app` (se README). Verktyget validerar beskrivningen och vägrar skriva till molnet.
 - **Påminnelser:** schemalagd Edge Function som skickar mejl, web push om tiden räcker.
 
 ## Stack
@@ -60,14 +66,14 @@ AI:n får aldrig skriva direkt till en app. Varje ändring valideras mot schemat
 - Supabase: Postgres, Auth, RLS, Edge Functions
 - GitHub Actions: lint, typkontroll, tester, Supabase-migreringar
 - **Eget Supabase-projekt** för det här, skilt från hobbyprojekten, med data i EU
-- **Kostnadsmätning:** varje AI-anrop loggas med tokens och personen som bygger (hushåll till M2b)
+- **Kostnadsmätning:** varje AI-anrop loggas med tokens, personen som bygger och appen
 
 ## Byggtjänsten
 
-Ett önskemål går så här, och inget steg kan hoppas över. Det beskrivs som det byggdes i M4; i M2b byts hushållet mot personen som bygger (kvot, gränser och kostnadslogg) och appens medlemmar (behörighet).
+Ett önskemål går så här, och inget steg kan hoppas över.
 
-1. **Inloggning och hushåll.** `build` tar emot `{ householdId, appId?, wish }` med personens inloggning. En ändring kräver att appen hör till det hushåll personen anger.
-2. **Reservation i databasen.** `reserve_ai_call` kontrollerar under ett lås, i ordning: nödbromsen, dygnstaket (dagens kostnad plus pågående anrop gånger en uppskattning), längden (högst 2 000 tecken), 10 i timmen per person, 30 i timmen per hushåll och månadskvoten (20 om inget annat är satt). Stoppas önskemålet anropas inte Claude och inget räknas.
+1. **Inloggning och ägarskap.** `build` tar emot `{ appId?, wish }` med personens inloggning. En ändring kräver att personen äger appen; en annans app ser ut som en app som inte finns. En ny app får personen som ägare.
+2. **Reservation i databasen.** `reserve_ai_call` kontrollerar under ett lås, i ordning: nödbromsen, dygnstaket (dagens kostnad plus pågående anrop gånger en uppskattning), längden (högst 2 000 tecken), 10 i timmen per person, 30 i timmen per app och personens månadskvot (20 om inget annat är satt). Stoppas önskemålet anropas inte Claude och inget räknas.
 3. **Claude.** Byggkärnan (`buildChange`) skickar systemprompten med byggstenarnas regler, schemat och två exempel, cachad, och appens beskrivning och önskemålet som data. Svaret är strukturerat: `summary`, `operations` (JSON Patch) och `not_possible`.
 4. **Validering.** Patchen tillämpas på en kopia och resultatet valideras med `parseAppDescription`; en ny app måste också ha en samling, en vy och ett formulär. Är det ogiltigt får Claude ett nytt försök med felen. Två misslyckanden ger ett ärligt besked och inget sparas.
 5. **Sparande.** En giltig beskrivning sparas som ny version med sammanfattning och `source = 'build'`, en ny app tillsammans med sin första version i en transaktion. Det som inte gick sparas i `wishes`.
@@ -90,9 +96,9 @@ update public.ai_settings set paused = false;
 update public.ai_settings set paused = true;
 -- Dygnstak och uppskattning per pågående anrop, i dollar
 update public.ai_settings set daily_cap_usd = 2.00, call_estimate_usd = 0.25;
--- Annan kvot för ett hushåll
-insert into public.ai_quotas (household_id, monthly_calls) values ('<hushållets id>', 100)
-  on conflict (household_id) do update set monthly_calls = excluded.monthly_calls;
+-- Annan kvot för en person
+insert into public.ai_quotas (user_id, monthly_calls) values ('<personens id>', 100)
+  on conflict (user_id) do update set monthly_calls = excluded.monthly_calls;
 -- Dagens kostnad
 select sum(cost_usd) from public.ai_calls where started_at >= date_trunc('day', now() at time zone 'Europe/Stockholm') at time zone 'Europe/Stockholm';
 ```

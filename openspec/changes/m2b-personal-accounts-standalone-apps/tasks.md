@@ -59,7 +59,7 @@
 
 ## 10. Dokument, utrullning och klart-kontroll
 
-- [ ] 10.1 Uppdatera `docs/03-arkitektur.md` (ta bort notisen om hushåll i koden, lägg till adresser, manifest och export), `docs/05-sakerhet.md` (`app_face` och exportloggen), README:s lokala steg, `CLAUDE.md` (ta bort "until then the code still has them") och `openspec/config.yaml` (RLS per appmedlemskap, kvot per person). Verifiera att `grep -ri hushåll docs README.md` bara träffar historik och affärsmodellens namn.
+- [x] 10.1 Uppdatera `docs/03-arkitektur.md` (ta bort notisen om hushåll i koden, lägg till adresser, manifest och export), `docs/05-sakerhet.md` (`app_face` och exportloggen), README:s lokala steg, `CLAUDE.md` (ta bort "until then the code still has them") och `openspec/config.yaml` (RLS per appmedlemskap, kvot per person). Verifiera att `grep -ri hushåll docs README.md` bara träffar historik och affärsmodellens namn.
 - [ ] 10.2 Före sammanslagningen och med ägarens ja: lägg till `https://pailo.se/a/**` bland de tillåtna adresserna i Supabase Auth i molnet och be ägaren ta en kopia av datan. Verifiera att adressen syns i Auth-inställningarna.
 - [ ] 10.3 Efter att ägaren slagit ihop PR:en, klart-kontrollen enligt design, Migration Plan, steg 4:
   - ägarens testappar finns med kortnamn;

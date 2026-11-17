@@ -14,13 +14,14 @@ AI:n kan bara producera en patch till appbeskrivningen, och användarna kör ing
 
 ## Säkerhet i användarnas appar
 
-- **Behörighet:** RLS per appmedlemskap på varje tabell. Bara den som är medlem i en app kan läsa eller skriva dess beskrivning och poster, och bara den som får ändra kan bygga om den. Tester i CI bevisar att person A aldrig når en app där A inte är medlem.
+- **Behörighet:** RLS per appmedlemskap på varje tabell. Bara den som är medlem i en app kan läsa eller skriva dess beskrivning och poster, och bara ägaren kan bygga om den, ångra, bjuda in och ladda ned den. Tester i CI bevisar med tre konton (ägare, medlem och utomstående) att en person aldrig når en app där hen inte är medlem, och att en medlem i en app inte når ägarens andra appar.
 - **Ingen körbar användarkod:** allt renderas via våra React-komponenter, aldrig rå HTML. Länkar saneras.
 - **Filer:** privata lagringsytor, signerade länkar med kort livstid, kontroll av filtyp och storlek.
 - **Inloggning:** magisk länk eller passkeys. Inbjudningslänkar går ut efter några dagar.
 - **Bokmärkesknapp och dela-meny:** egen begränsad token som bara kan lägga till i en app och kan återkallas.
 - **Inga publika appar i v1.** En app är privat för sina medlemmar, även på sin egen adress.
-- **Export:** paketet innehåller appens alla poster, även andra medlemmars, så bara ägaren kan ladda ned det, och nedladdningen loggas. Paketet innehåller inga nycklar, inloggningsuppgifter eller adresser till vårt API. Det kör samma runtime med samma regler: ingen rå HTML och sanerade länkar.
+- **Det som syns utan inloggning:** appens namn, ikon och tema, så att inloggningssidan och hemskärmsikonen kan se ut som appen (`app_face` och funktionen `app-manifest`). Inget annat: inga samlingar, poster, medlemmar eller ägare. Adressens kortnamn har en slumpad del så att det inte går att gissa, men skyddet är inloggning och RLS, inte att adressen är hemlig.
+- **Export:** paketet innehåller appens alla poster, även andra medlemmars, så bara ägaren kan ladda ned det, och nedladdningen loggas. Varje nedladdning loggas i `app_exports` innan något lämnas ut. Paketet innehåller inga nycklar, inloggningsuppgifter eller adresser till vårt API, vilket ett test kontrollerar i varje bygge. Det kör samma runtime med samma regler: ingen rå HTML och sanerade länkar. En innehållspolicy i filen hindrar den från att anropa någon server, och posterna läggs in så att inget i dem kan avsluta skriptet de ligger i.
 - **GDPR:** data i EU, personuppgiftsbiträdesavtal med Supabase, Vercel och Anthropic, integritetspolicy, export och radering på begäran. Anthropic: arbetsytan Pailo behandlar data i USA (global behandling), eftersom EU-behandling inte går att välja än. Ägaren godkände det 17 november 2026; det ses över innan lansering. Claude får bara appbeskrivningen och önskemålet, aldrig poster.
 - **Barn:** konton kräver 18 år. Barn kan finnas med i en app utan egna konton i v1.
 - **Drift:** dagliga backuper med testad återställning, beroendeskanning i CI, externt penetrationstest innan fas 3.

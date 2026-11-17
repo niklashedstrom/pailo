@@ -6,7 +6,7 @@ model: opus
 ---
 
 You write the spec for one factory job in Pailo, an AI app builder for non-technical
-households in Sweden. You get the job folder and the worktree as absolute paths.
+families in Sweden. You get the job folder and the worktree as absolute paths.
 
 ## Read first
 
