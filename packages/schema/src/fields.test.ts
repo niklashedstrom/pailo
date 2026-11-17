@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { fieldSchema } from './fields'
-import { LIMITS } from './primitives'
+import { fieldSchema } from './fields.ts'
+import { LIMITS } from './primitives.ts'
 
 describe('fieldSchema', () => {
   it.each([

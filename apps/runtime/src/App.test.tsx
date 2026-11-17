@@ -393,3 +393,93 @@ describe("the household's apps", () => {
     expect(await screen.findByText('Det gick inte att visa apparna just nu.')).toBeInTheDocument()
   })
 })
+
+describe('building a new app with words', () => {
+  const laxor = {
+    ...rawDrop,
+    name: 'Läxor',
+    collections: [{ id: 'laxor', name: 'Läxor', access: 'edit', fields: [{ id: 'amne', label: 'Ämne', type: 'text' }] }],
+    views: [{ id: 'alla', name: 'Alla', type: 'list', collection: 'laxor' }],
+    inputs: [{ id: 'ny', name: 'Ny läxa', type: 'form', collection: 'laxor' }],
+  }
+
+  function setup(state: Parameters<typeof fakeApi>[0] = {}) {
+    const result = fakeApi({ userId: 'u-1', households: [familjen], members, ...state })
+    render(<App api={result.api} storage={memoryStorage()} />)
+    return result
+  }
+
+  async function ask(wish: string) {
+    await userEvent.type(await screen.findByLabelText('Vad vill du ha hjälp med?'), wish)
+    await userEvent.click(screen.getByRole('button', { name: 'Bygg en app' }))
+  }
+
+  it('builds the app, opens it and tells what was built', async () => {
+    const { api } = setup({ builds: [{ kind: 'ok', description: laxor, summary: 'Nu kan ni hålla koll på läxor.' }] })
+    expect(await screen.findByText('Hushållet har 20 ändringar kvar den här månaden.')).toBeInTheDocument()
+    await ask('Vi vill hålla koll på läxor')
+    expect(api.buildApp).toHaveBeenCalledWith('h-1', 'Vi vill hålla koll på läxor')
+    expect(await screen.findByRole('heading', { name: 'Läxor' })).toBeInTheDocument()
+    expect(window.location.pathname).toMatch(/^\/app\/a-new-/)
+    expect(screen.getByRole('status', { name: 'Ändringen' })).toHaveTextContent('Nu kan ni hålla koll på läxor.')
+    expect(screen.queryByRole('button', { name: 'Ångra' })).not.toBeInTheDocument()
+    window.history.replaceState(null, '', '/')
+  })
+
+  it('keeps the text and explains when the month is used up', async () => {
+    setup({ remaining: 0, builds: [{ kind: 'limit', reason: 'quota', retryAt: '2026-11-30T23:00:00Z' }] })
+    expect(await screen.findByText('Hushållet har inga ändringar kvar den här månaden.')).toBeInTheDocument()
+    await ask('En app för läxor')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Hushållets ändringar för den här månaden är slut. De fylls på den 1 december.',
+    )
+    expect(screen.getByLabelText('Vad vill du ha hjälp med?')).toHaveValue('En app för läxor')
+  })
+
+  it.each([
+    ['paused', 'Byggandet är pausat en stund. Dina appar fungerar som vanligt.'],
+    ['too-long', 'Skriv lite kortare, högst 2 000 tecken.'],
+  ] as const)('explains a stop for %s', async (reason, message) => {
+    setup({ builds: [{ kind: 'limit', reason, retryAt: null }] })
+    await ask('En app')
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+  })
+
+  it('says when to try again after too many wishes', async () => {
+    setup({ builds: [{ kind: 'limit', reason: 'rate-person', retryAt: '2026-11-17T09:42:00Z' }] })
+    await ask('En app')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Försök igen efter kl. 10:42.')
+  })
+
+  it('tells honestly what is not possible and that the wish is saved', async () => {
+    setup({
+      builds: [{ kind: 'not-possible', summary: 'Pailo kan inte skicka sms.', notPossible: [{ wish: 'skicka sms', nearest: 'En lista att bocka av' }] }],
+    })
+    await ask('skicka sms till barnen')
+    const alert = await screen.findByRole('status')
+    expect(alert).toHaveTextContent('Det här kan Pailo inte göra än:')
+    expect(alert).toHaveTextContent('skicka sms')
+    expect(alert).toHaveTextContent('Det närmaste som går: En lista att bocka av')
+    expect(alert).toHaveTextContent('Vi har sparat önskemålet.')
+  })
+
+  it('says so when it did not work, without technical words', async () => {
+    setup({ builds: [{ kind: 'failed' }] })
+    await ask('En app')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Det gick inte den här gången.')
+  })
+
+  it('sends a wish only once on a double tap and locks the field while building', async () => {
+    let finish: (value: { kind: 'failed' }) => void = () => {}
+    const { api } = setup()
+    api.buildApp.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)))
+    await userEvent.type(await screen.findByLabelText('Vad vill du ha hjälp med?'), 'En app')
+    const button = screen.getByRole('button', { name: 'Bygg en app' })
+    await userEvent.dblClick(button)
+    expect(api.buildApp).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('button', { name: 'Bygger …' })).toBeDisabled()
+    expect(screen.getByLabelText('Vad vill du ha hjälp med?')).toBeDisabled()
+    await act(async () => finish({ kind: 'failed' }))
+    expect(screen.getByRole('button', { name: 'Bygg en app' })).toBeEnabled()
+  })
+})

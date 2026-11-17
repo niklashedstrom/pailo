@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import { type AppDescription, appDescriptionSchema } from './description'
+import { type AppDescription, appDescriptionSchema } from './description.ts'
 
 export type Issue = { path: (string | number)[]; message: string }
 

@@ -1,11 +1,11 @@
 import { z } from 'zod'
-import { collectionSchema } from './collection'
-import { inputSchema } from './inputs'
-import { LIMITS, descriptionSchema, idSchema, nameSchema } from './primitives'
-import { checkReferences } from './references'
-import { reminderSchema } from './reminders'
-import { iconSchema, themeSchema } from './theme'
-import { viewSchema } from './views'
+import { collectionSchema } from './collection.ts'
+import { inputSchema } from './inputs.ts'
+import { LIMITS, descriptionSchema, idSchema, nameSchema } from './primitives.ts'
+import { checkReferences } from './references.ts'
+import { reminderSchema } from './reminders.ts'
+import { iconSchema, themeSchema } from './theme.ts'
+import { viewSchema } from './views.ts'
 
 export const CURRENT_SCHEMA_VERSION = 1
 

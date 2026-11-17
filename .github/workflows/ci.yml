@@ -26,6 +26,13 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.8
+      - name: Check and lint the server functions
+        run: |
+          deno lint supabase/functions
+          for f in supabase/functions/*/index.ts; do (cd "$(dirname "$f")" && deno check index.ts); done
 
   database:
     name: Migrations and pgTAP
@@ -35,13 +42,32 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 2.101.0
-      - name: Start local database and apply migrations
-        run: supabase db start
+      - name: Start the local stack and apply migrations
+        run: supabase start -x imgproxy,studio,mailpit,vector,logflare,realtime,storage-api,postgres-meta,supavisor
       - name: Run pgTAP tests
         run: supabase test db
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Start the server functions
+        run: |
+          supabase functions serve --env-file supabase/functions/test.env > functions.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null -X OPTIONS http://127.0.0.1:55421/functions/v1/build; then exit 0; fi
+            sleep 2
+          done
+          echo "The server functions did not start"
+          exit 1
+      - name: Test the build service with a fake Claude
+        run: npm run test:integration
+      - name: Server function logs
+        if: failure()
+        run: cat functions.log
 
   deploy-database:
-    name: Roll out migrations to the cloud project
+    name: Roll out migrations and server functions to the cloud project
     # Only after merge to main, and only when every check passed.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [app, database]
@@ -61,3 +87,5 @@ jobs:
         run: supabase link --project-ref edtgepobtmyogdmaphfm
       - name: Apply new migrations (stops at the first error)
         run: supabase db push
+      - name: Roll out the server functions
+        run: supabase functions deploy

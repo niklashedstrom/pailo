@@ -1,0 +1,1 @@
+{ "kind": "new", "wish": "Jag vill kunna spara länkar och tips jag hittar på mobilen, och sortera dem med etiketter som läs senare, recept och köpa.", "expect": [{ "fieldType": "link" }, { "fieldType": "choice" }] }

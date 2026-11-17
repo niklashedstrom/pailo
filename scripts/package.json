@@ -7,9 +7,12 @@
     "dev:app": "tsx src/dev-app.ts",
     "lint": "oxlint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:integration": "INTEGRATION=1 vitest run",
+    "eval:build": "tsx src/eval-build.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.4.0",
     "@pailo/schema": "*",
     "@supabase/supabase-js": "2.118.0"
   },

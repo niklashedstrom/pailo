@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { idSchema, nameSchema } from './primitives'
+import { idSchema, nameSchema } from './primitives.ts'
 
 const base = { id: idSchema, name: nameSchema, collection: idSchema }
 

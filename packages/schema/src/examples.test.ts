@@ -3,7 +3,7 @@ import drop from '../examples/drop.json'
 import calendarWithoutDate from '../examples/invalid/kalender-utan-datumfalt.json'
 import unknownProperty from '../examples/invalid/okand-egenskap.json'
 import matschema from '../examples/matschema.json'
-import { parseAppDescription } from './parse'
+import { parseAppDescription } from './parse.ts'
 
 describe('reference apps', () => {
   it.each([

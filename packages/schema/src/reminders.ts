@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { LIMITS, idSchema, nameSchema } from './primitives'
+import { LIMITS, idSchema, nameSchema } from './primitives.ts'
 
 export const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
 

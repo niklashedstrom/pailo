@@ -10,7 +10,7 @@ AI:n kan bara producera en patch till appbeskrivningen, och användarna kör ing
 - **Hastighetsgränser** per användare och hushåll, till exempel högst 10 ändringar i timmen, och max längd på meddelanden.
 - **Global nödbroms:** tak för total AI-kostnad per dag. Överskrids det pausas byggandet och larm går.
 - **Avvikelsedetektion:** flagga konton som når taket direkt, skickar ovanligt långa meddelanden eller anropar i maskinmässig takt.
-- **Promptinjektion:** appinnehåll som skickas till AI:n är data. AI:n har inga verktyg utöver att föreslå en patch, som valideras och kan ångras.
+- **Promptinjektion:** appens beskrivning och önskemålet skickas som märkt data i användarmeddelandet, aldrig i systemprompten. AI:n har inga verktyg utöver att föreslå en patch, ser aldrig poster, och resultatet valideras och kan ångras.
 
 ## Säkerhet i användarnas appar
 

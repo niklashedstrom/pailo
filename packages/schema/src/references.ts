@@ -1,9 +1,9 @@
 import type { z } from 'zod'
-import type { Collection } from './collection'
-import type { FieldType } from './fields'
-import type { Input } from './inputs'
-import type { Reminder } from './reminders'
-import type { View } from './views'
+import type { Collection } from './collection.ts'
+import type { FieldType } from './fields.ts'
+import type { Input } from './inputs.ts'
+import type { Reminder } from './reminders.ts'
+import type { View } from './views.ts'
 
 type Path = (string | number)[]
 type Ctx = z.RefinementCtx

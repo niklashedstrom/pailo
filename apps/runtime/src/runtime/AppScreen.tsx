@@ -3,9 +3,12 @@ import { type CSSProperties, useCallback, useEffect, useRef, useState } from 're
 import { type AppRecord, DeniedError, type Household, type Member, type OpenApp, type PailoApi } from '../api'
 import { Link } from '../Link'
 import { navigate } from '../router'
+import { BuildForm, BuildNotice, type Notice, VersionList } from './Building'
+import { problemMessage } from './buildMessages'
 import { FieldValue } from './FieldValue'
 import { toFormValues } from './formValues'
 import { permissions } from './permissions'
+import { forgetNotice, noticeFor } from './notices'
 import { RecordForm } from './RecordForm'
 import { themeVariables } from './theme/tokens'
 import { type AppData, findCollection, recordTitle } from './values'
@@ -40,6 +43,14 @@ export default function AppScreen({ api, appId, viewId, userId, households, now 
   const [loaded, setLoaded] = useState<{ appId: string; state: Loaded }>({ appId, state: { kind: 'loading' } })
   const [panel, setPanel] = useState<Panel>(null)
   const state: Loaded = loaded.appId === appId ? loaded.state : { kind: 'loading' }
+  // Bumped after the app changed, so its latest version is loaded again.
+  const [reloadKey, setReloadKey] = useState(0)
+  const [editing, setEditing] = useState<'none' | 'change' | 'versions'>('none')
+  const [notice, setNotice] = useState<Notice | null>(() => noticeFor(appId))
+  const [restoring, setRestoring] = useState(false)
+  const [restoreProblem, setRestoreProblem] = useState<string | null>(null)
+
+  useEffect(() => forgetNotice(appId), [appId])
 
   useEffect(() => {
     let active = true
@@ -55,7 +66,7 @@ export default function AppScreen({ api, appId, viewId, userId, households, now 
     return () => {
       active = false
     }
-  }, [api, appId])
+  }, [api, appId, reloadKey])
 
   const reloadRecords = useCallback(async () => {
     const records = await api.listRecords(appId)
@@ -89,6 +100,22 @@ export default function AppScreen({ api, appId, viewId, userId, households, now 
   }
 
   const { app, records, members } = state
+
+  /** Saves an earlier version as the newest, then shows it. */
+  async function restore(version: number, undoTo?: number) {
+    setRestoring(true)
+    setRestoreProblem(null)
+    const result = await api.restoreVersion(appId, version)
+    setRestoring(false)
+    if (result.kind === 'ok') {
+      setNotice({ summary: undoTo === undefined ? 'Ändringen är ångrad.' : result.summary, notPossible: [], undoTo })
+      setEditing('none')
+      setReloadKey((n) => n + 1)
+    } else {
+      setRestoreProblem(problemMessage(result))
+    }
+  }
+
   const { description } = app
   const role = households.find((h) => h.id === app.householdId)?.role ?? 'member'
   const data: AppData = { description, records, members }
@@ -108,6 +135,61 @@ export default function AppScreen({ api, appId, viewId, userId, households, now 
 
       {panel === null ? (
         <>
+          {notice && (
+            <BuildNotice
+              notice={notice}
+              busy={restoring}
+              onUndo={() => notice.undoTo !== undefined && restore(notice.undoTo)}
+              onClose={() => setNotice(null)}
+            />
+          )}
+          {restoreProblem && (
+            <p role="alert" className="form-error">
+              {restoreProblem}
+            </p>
+          )}
+          <div className="change-buttons">
+            <button
+              type="button"
+              className="secondary"
+              aria-expanded={editing === 'change'}
+              onClick={() => setEditing(editing === 'change' ? 'none' : 'change')}
+            >
+              Ändra appen
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              aria-expanded={editing === 'versions'}
+              onClick={() => setEditing(editing === 'versions' ? 'none' : 'versions')}
+            >
+              Tidigare versioner
+            </button>
+          </div>
+          {editing === 'change' && (
+            <BuildForm
+              api={api}
+              householdId={app.householdId}
+              label="Vad vill du ändra?"
+              hint="Till exempel: ”Lägg till vem som lagar maten” eller ”Gör den grönare”."
+              submitLabel="Ändra"
+              onSubmit={(wish) => api.changeApp(app.householdId, appId, wish)}
+              onSaved={(result) => {
+                setNotice({ summary: result.summary, notPossible: result.notPossible, undoTo: result.version - 1 })
+                setEditing('none')
+                setReloadKey((n) => n + 1)
+              }}
+            />
+          )}
+          {editing === 'versions' && (
+            <VersionList
+              api={api}
+              appId={appId}
+              members={members}
+              current={app.version}
+              onRestore={(version) => restore(version, app.version)}
+            />
+          )}
           {description.views.length > 1 && (
             <nav className="view-tabs" aria-label="Vyer">
               {description.views.map((v) => (

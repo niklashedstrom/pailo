@@ -1,5 +1,5 @@
-import { type AppDescription, CURRENT_SCHEMA_VERSION } from './description'
-import { type ParseResult, parseAppDescription } from './parse'
+import { type AppDescription, CURRENT_SCHEMA_VERSION } from './description.ts'
+import { type ParseResult, parseAppDescription } from './parse.ts'
 
 type Raw = Record<string, unknown>
 

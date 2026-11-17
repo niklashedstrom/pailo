@@ -1,0 +1,1 @@
+{ "kind": "change", "base": "matschema", "wish": "Skicka ett sms till barnen när maten är klar, och lägg till en anteckning till varje middag.", "expect": [{ "notPossible": true }] }
