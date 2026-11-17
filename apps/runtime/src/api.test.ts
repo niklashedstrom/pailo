@@ -285,3 +285,84 @@ describe('supabaseApi apps and records', () => {
     await expect(api.deleteRecord('r-1')).rejects.toBeInstanceOf(DeniedError)
   })
 })
+
+describe('supabaseApi build service', () => {
+  function withFunctions(answer: { data: unknown; error: unknown } | Error) {
+    const invoke = vi.fn(async () => {
+      if (answer instanceof Error) throw answer
+      return answer
+    })
+    const rpc = vi.fn(async () => ({ data: 7, error: null }))
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      order: vi.fn(() => query),
+      then: (resolve: (value: unknown) => void) =>
+        resolve({
+          data: [{ version: 2, created_at: '2026-11-17T08:00:00Z', created_by: 'u-1', summary: 'Ett datum.', source: 'build' }],
+          error: null,
+        }),
+    }
+    const client = { functions: { invoke }, rpc, from: vi.fn(() => query), auth: {} }
+    return { invoke, rpc, api: supabaseApi(client as unknown as SupabaseClient, 'https://pailo.se') }
+  }
+
+  it('sends a new app wish to the build service', async () => {
+    const { invoke, api } = withFunctions({
+      data: { outcome: 'ok', appId: 'a-1', version: 1, summary: 'Klart.', notPossible: [{ wish: 'sms', nearest: null }] },
+      error: null,
+    })
+    expect(await api.buildApp('h-1', 'läxor')).toEqual({
+      kind: 'ok',
+      appId: 'a-1',
+      version: 1,
+      summary: 'Klart.',
+      notPossible: [{ wish: 'sms', nearest: null }],
+    })
+    expect(invoke).toHaveBeenCalledWith('build', { body: { householdId: 'h-1', wish: 'läxor' } })
+  })
+
+  it('sends a change with the app', async () => {
+    const { invoke, api } = withFunctions({ data: { outcome: 'not-possible', summary: 'Det går inte.', notPossible: [] }, error: null })
+    expect(await api.changeApp('h-1', 'a-1', 'sms')).toEqual({ kind: 'not-possible', summary: 'Det går inte.', notPossible: [] })
+    expect(invoke).toHaveBeenCalledWith('build', { body: { householdId: 'h-1', appId: 'a-1', wish: 'sms' } })
+  })
+
+  it.each([
+    [{ outcome: 'limit', reason: 'quota', retryAt: '2026-12-01T00:00:00+01:00' }, { kind: 'limit', reason: 'quota', retryAt: '2026-12-01T00:00:00+01:00' }],
+    [{ outcome: 'limit', reason: 'paused', retryAt: null }, { kind: 'limit', reason: 'paused', retryAt: null }],
+    [{ outcome: 'limit', reason: 'something-new' }, { kind: 'failed' }],
+    [{ outcome: 'not-found' }, { kind: 'not-found' }],
+    [{ outcome: 'failed' }, { kind: 'failed' }],
+    ['not json', { kind: 'failed' }],
+  ])('reads %j', async (data, expected) => {
+    const { api } = withFunctions({ data, error: null })
+    expect(await api.changeApp('h-1', 'a-1', 'x')).toEqual(expected)
+  })
+
+  it('reads an error from the service or the network as failed, without throwing', async () => {
+    expect(await withFunctions({ data: null, error: new Error('401') }).api.buildApp('h-1', 'x')).toEqual({ kind: 'failed' })
+    expect(await withFunctions(new Error('offline')).api.buildApp('h-1', 'x')).toEqual({ kind: 'failed' })
+  })
+
+  it('restores a version', async () => {
+    const { invoke, api } = withFunctions({ data: { outcome: 'ok', appId: 'a-1', version: 5, summary: 'Som i tisdags.' }, error: null })
+    expect(await api.restoreVersion('a-1', 2)).toEqual({ kind: 'ok', version: 5, summary: 'Som i tisdags.' })
+    expect(invoke).toHaveBeenCalledWith('restore', { body: { appId: 'a-1', version: 2 } })
+    expect(await withFunctions({ data: { outcome: 'limit', reason: 'rate-person', retryAt: null }, error: null }).api.restoreVersion('a-1', 2))
+      .toEqual({ kind: 'limit', reason: 'rate-person', retryAt: null })
+  })
+
+  it('lists versions newest first', async () => {
+    const { api } = withFunctions({ data: null, error: null })
+    expect(await api.listVersions('a-1')).toEqual([
+      { version: 2, createdAt: '2026-11-17T08:00:00Z', createdBy: 'u-1', summary: 'Ett datum.', source: 'build' },
+    ])
+  })
+
+  it('reads how many builds are left', async () => {
+    const { rpc, api } = withFunctions({ data: null, error: null })
+    expect(await api.remainingBuilds('h-1')).toBe(7)
+    expect(rpc).toHaveBeenCalledWith('remaining_builds', { target_household: 'h-1' })
+  })
+})

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { parseAppDescription } from './parse'
-import { type Draft, validDescription } from './test-helpers'
+import { parseAppDescription } from './parse.ts'
+import { type Draft, validDescription } from './test-helpers.ts'
 
 function issuePaths(d: Draft) {
   const result = parseAppDescription(d)

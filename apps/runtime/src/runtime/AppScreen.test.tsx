@@ -407,3 +407,115 @@ describe('done criterion for M3', () => {
     expect(state.records.filter((r) => r.collection === collection)).toHaveLength(0)
   })
 })
+
+describe('changing the app with words', () => {
+  const withDate = () => {
+    const changed = structuredClone(rawDrop) as typeof rawDrop & { collections: { fields: unknown[] }[] }
+    changed.collections[0].fields.push({ id: 'datum', label: 'Datum', type: 'date' })
+    return changed
+  }
+
+  async function change(wish: string) {
+    await userEvent.click(await screen.findByRole('button', { name: 'Ändra appen' }))
+    await userEvent.type(screen.getByLabelText('Vad vill du ändra?'), wish)
+    await userEvent.click(screen.getByRole('button', { name: 'Ändra' }))
+  }
+
+  it('shows the new version with the summary, and undo brings the old one back', async () => {
+    const { api, state } = setup({
+      path: '/app/a-drop',
+      state: { builds: [{ kind: 'ok', description: withDate(), summary: 'Nu finns ett datum på varje sak.' }] },
+    })
+    await change('lägg till datum')
+    expect(api.changeApp).toHaveBeenCalledWith('h-1', 'a-drop', 'lägg till datum')
+    expect(await screen.findByRole('status', { name: 'Ändringen' })).toHaveTextContent('Nu finns ett datum på varje sak.')
+    await userEvent.click(screen.getByRole('button', { name: 'Spara något' }))
+    expect(screen.getByLabelText('Datum')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Avbryt' }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ångra' }))
+    expect(api.restoreVersion).toHaveBeenCalledWith('a-drop', 1)
+    expect(await screen.findByText('Ändringen är ångrad.')).toBeInTheDocument()
+    expect(state.apps.find((a) => a.id === 'a-drop')?.versions).toHaveLength(3)
+    await userEvent.click(screen.getByRole('button', { name: 'Spara något' }))
+    expect(screen.queryByLabelText('Datum')).not.toBeInTheDocument()
+  })
+
+  it('keeps the text when the change did not work', async () => {
+    setup({ path: '/app/a-drop', state: { builds: [{ kind: 'failed' }] } })
+    await change('gör något konstigt')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Det gick inte den här gången.')
+    expect(screen.getByLabelText('Vad vill du ändra?')).toHaveValue('gör något konstigt')
+  })
+
+  it('keeps data in a removed field and shows it again after undo', async () => {
+    const withoutTags = structuredClone(rawDrop) as typeof rawDrop
+    withoutTags.collections[0].fields = withoutTags.collections[0].fields.filter((f) => f.id !== 'tags')
+    withoutTags.views[0].fields = ['title', 'url']
+    const { state } = setup({
+      path: '/app/a-drop',
+      state: { builds: [{ kind: 'ok', description: withoutTags, summary: 'Etiketterna är borta.' }] },
+    })
+    create(state, 'a-drop', 'drops', { title: 'Pasta', tags: ['recept'] })
+    expect(await screen.findByText('Recept')).toBeInTheDocument()
+
+    await change('ta bort etiketterna')
+    await screen.findByText('Etiketterna är borta.')
+    expect(screen.queryByText('Recept')).not.toBeInTheDocument()
+    expect(state.records[0].data).toEqual({ title: 'Pasta', tags: ['recept'] })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ångra' }))
+    expect(await screen.findByText('Recept')).toBeInTheDocument()
+  })
+})
+
+describe('earlier versions', () => {
+  const at = (hour: number) => new Date(Date.UTC(2026, 10, 10, hour, 0)).toISOString()
+
+  function threeVersions() {
+    const v2 = { ...rawDrop, name: 'Drop 2' }
+    const v3 = { ...rawDrop, name: 'Drop 3' }
+    const app = fakeApp('a-drop', 'h-1', rawDrop)
+    app.versions = [rawDrop, v2, v3]
+    app.meta = [
+      { createdAt: at(8), createdBy: null, summary: null, source: 'developer' },
+      { createdAt: at(9), createdBy: BERTIL, summary: 'Nytt namn.', source: 'build' },
+      { createdAt: at(10), createdBy: ANNA, summary: 'Ett till namn.', source: 'build' },
+    ]
+    return app
+  }
+
+  it('lists versions newest first with time, person and summary, and goes back to one', async () => {
+    const { api, state } = setup({ path: '/app/a-drop', state: { apps: [threeVersions()] } })
+    await userEvent.click(await screen.findByRole('button', { name: 'Tidigare versioner' }))
+    const items = within(await screen.findByRole('list', { name: '' })).getAllByRole('listitem')
+    expect(items).toHaveLength(3)
+    expect(items[0]).toHaveTextContent('Ett till namn.')
+    expect(items[0]).toHaveTextContent('Så här ser appen ut nu.')
+    expect(items[1]).toHaveTextContent('10 nov. 10:00')
+    expect(items[1]).toHaveTextContent('Bertil')
+    expect(items[2]).toHaveTextContent('Inlagd')
+    expect(items[2]).toHaveTextContent('Första versionen.')
+
+    await userEvent.click(within(items[2]).getByRole('button', { name: 'Gå tillbaka hit' }))
+    expect(api.restoreVersion).toHaveBeenCalledWith('a-drop', 1)
+    expect(await screen.findByRole('heading', { name: 'Drop' })).toBeInTheDocument()
+    expect(state.apps[0].versions).toHaveLength(4)
+    expect(screen.getByRole('status', { name: 'Ändringen' })).toHaveTextContent('Appen ser ut som den gjorde i version 1.')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ångra' }))
+    expect(api.restoreVersion).toHaveBeenLastCalledWith('a-drop', 3)
+    expect(await screen.findByRole('heading', { name: 'Drop 3' })).toBeInTheDocument()
+  })
+
+  it('explains when going back is stopped', async () => {
+    setup({
+      path: '/app/a-drop',
+      state: { apps: [threeVersions()], restoreNext: { kind: 'limit', reason: 'rate-person', retryAt: null } },
+    })
+    await userEvent.click(await screen.findByRole('button', { name: 'Tidigare versioner' }))
+    const items = within(await screen.findByRole('list', { name: '' })).getAllByRole('listitem')
+    await userEvent.click(within(items[1]).getByRole('button', { name: 'Gå tillbaka hit' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Du har gjort många ändringar på kort tid. Försök igen om en stund.')
+  })
+})

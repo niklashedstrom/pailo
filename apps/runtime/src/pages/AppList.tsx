@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import type { AppSummary, PailoApi } from '../api'
 import { Link } from '../Link'
+import { navigate } from '../router'
+import { BuildForm } from '../runtime/Building'
 import { ICON_EMOJI } from '../runtime/icons'
+import { rememberNotice } from '../runtime/notices'
 
 /**
- * The household's apps. Pailo has no ready-made apps to pick from: apps are
- * built from the building blocks (by the build service from M4).
+ * The household's apps. Pailo has no ready-made apps to pick from: a member
+ * describes what they need, and the build service builds it from the
+ * building blocks.
  */
 export default function AppList({ api, householdId }: { api: PailoApi; householdId: string }) {
   const [loaded, setLoaded] = useState<{ householdId: string; apps: AppSummary[] | 'failed' }>()
@@ -42,6 +46,18 @@ export default function AppList({ api, householdId }: { api: PailoApi; household
           ))}
         </ul>
       )}
+      <BuildForm
+        api={api}
+        householdId={householdId}
+        label="Vad vill du ha hjälp med?"
+        hint="Beskriv med egna ord, till exempel: ”Vi vill planera veckans middagar och se vem som lagar maten.”"
+        submitLabel="Bygg en app"
+        onSubmit={(wish) => api.buildApp(householdId, wish)}
+        onSaved={(result) => {
+          rememberNotice(result.appId, { summary: result.summary, notPossible: result.notPossible })
+          navigate({ kind: 'app', appId: result.appId })
+        }}
+      />
     </section>
   )
 }

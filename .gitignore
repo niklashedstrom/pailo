@@ -12,3 +12,6 @@ dist
 .worktrees
 factory/board.json
 factory/jobs
+
+# Eval results (contain usage and cost per run)
+evals/build/results/

@@ -42,6 +42,36 @@ export interface AppRecord {
   updatedAt: string
 }
 
+/** Why the build service stopped a wish before asking the AI. */
+export type LimitReason = 'paused' | 'daily-cap' | 'too-long' | 'rate-person' | 'rate-household' | 'quota'
+
+/** Something the building blocks cannot do, and the closest thing they can. */
+export interface NotPossible {
+  wish: string
+  nearest: string | null
+}
+
+export type BuildResult =
+  | { kind: 'ok'; appId: string; version: number; summary: string; notPossible: NotPossible[] }
+  | { kind: 'not-possible'; summary: string; notPossible: NotPossible[] }
+  | { kind: 'limit'; reason: LimitReason; retryAt: string | null }
+  | { kind: 'not-found' }
+  | { kind: 'failed' }
+
+export type RestoreResult =
+  | { kind: 'ok'; version: number; summary: string }
+  | { kind: 'limit'; reason: LimitReason; retryAt: string | null }
+  | { kind: 'not-found' }
+  | { kind: 'failed' }
+
+export interface AppVersion {
+  version: number
+  createdAt: string
+  createdBy: string | null
+  summary: string | null
+  source: 'build' | 'restore' | 'developer'
+}
+
 /** The database refused a change (permissions), as opposed to it failing. */
 export class DeniedError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
@@ -84,6 +114,53 @@ export interface PailoApi {
   updateRecord(recordId: string, data: RecordData): Promise<void>
   /** Throws DeniedError when not allowed. */
   deleteRecord(recordId: string): Promise<void>
+  /** Asks the build service for a new app in the household. Never throws. */
+  buildApp(householdId: string, wish: string): Promise<BuildResult>
+  /** Asks the build service to change an app. Never throws. */
+  changeApp(householdId: string, appId: string, wish: string): Promise<BuildResult>
+  /** Saves an earlier version again as the newest one. Never throws. */
+  restoreVersion(appId: string, version: number): Promise<RestoreResult>
+  /** The app's versions, newest first. */
+  listVersions(appId: string): Promise<AppVersion[]>
+  /** How many builds the household has left this month. */
+  remainingBuilds(householdId: string): Promise<number>
+}
+
+const LIMIT_REASONS: readonly string[] = ['paused', 'daily-cap', 'too-long', 'rate-person', 'rate-household', 'quota']
+
+/** Reads a function's answer; anything unexpected becomes 'failed'. */
+function toLimit(body: Record<string, unknown>): { kind: 'limit'; reason: LimitReason; retryAt: string | null } | null {
+  if (body.outcome !== 'limit' || typeof body.reason !== 'string' || !LIMIT_REASONS.includes(body.reason)) return null
+  return { kind: 'limit', reason: body.reason as LimitReason, retryAt: typeof body.retryAt === 'string' ? body.retryAt : null }
+}
+
+function readNotPossible(value: unknown): NotPossible[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item) =>
+    typeof item?.wish === 'string' ? [{ wish: item.wish, nearest: typeof item.nearest === 'string' ? item.nearest : null }] : [],
+  )
+}
+
+export function toBuildResult(body: unknown): BuildResult {
+  if (typeof body !== 'object' || body === null) return { kind: 'failed' }
+  const b = body as Record<string, unknown>
+  const summary = typeof b.summary === 'string' ? b.summary : ''
+  if (b.outcome === 'ok' && typeof b.appId === 'string' && typeof b.version === 'number') {
+    return { kind: 'ok', appId: b.appId, version: b.version, summary, notPossible: readNotPossible(b.notPossible) }
+  }
+  if (b.outcome === 'not-possible') return { kind: 'not-possible', summary, notPossible: readNotPossible(b.notPossible) }
+  if (b.outcome === 'not-found') return { kind: 'not-found' }
+  return toLimit(b) ?? { kind: 'failed' }
+}
+
+export function toRestoreResult(body: unknown): RestoreResult {
+  if (typeof body !== 'object' || body === null) return { kind: 'failed' }
+  const b = body as Record<string, unknown>
+  if (b.outcome === 'ok' && typeof b.version === 'number') {
+    return { kind: 'ok', version: b.version, summary: typeof b.summary === 'string' ? b.summary : '' }
+  }
+  if (b.outcome === 'not-found') return { kind: 'not-found' }
+  return toLimit(b) ?? { kind: 'failed' }
 }
 
 export const INVITE_PATH = '/inbjudan'
@@ -340,5 +417,46 @@ export function supabaseApi(client: SupabaseClient, origin: string): PailoApi {
       if (result.error) fail('could not delete record', result.error)
       if (!result.data || result.data.length === 0) throw new DeniedError('not allowed to delete')
     },
+
+    async buildApp(householdId, wish) {
+      return toBuildResult(await invoke('build', { householdId, wish }))
+    },
+
+    async changeApp(householdId, appId, wish) {
+      return toBuildResult(await invoke('build', { householdId, appId, wish }))
+    },
+
+    async restoreVersion(appId, version) {
+      return toRestoreResult(await invoke('restore', { appId, version }))
+    },
+
+    async listVersions(appId) {
+      const { data, error } = await client
+        .from('app_versions')
+        .select('version, created_at, created_by, summary, source')
+        .eq('app_id', appId)
+        .order('version', { ascending: false })
+      if (error) fail('could not list versions', error)
+      return (data as { version: number; created_at: string; created_by: string | null; summary: string | null; source: AppVersion['source'] }[]).map(
+        (row) => ({ version: row.version, createdAt: row.created_at, createdBy: row.created_by, summary: row.summary, source: row.source }),
+      )
+    },
+
+    async remainingBuilds(householdId) {
+      const { data, error } = await client.rpc('remaining_builds', { target_household: householdId })
+      if (error) fail('could not read remaining builds', error)
+      return data as number
+    },
+  }
+
+  /** Calls a server function; any failure becomes null, read as 'failed'. */
+  async function invoke(name: 'build' | 'restore', body: Record<string, unknown>): Promise<unknown> {
+    try {
+      const { data, error } = await client.functions.invoke(name, { body })
+      if (error) return null
+      return data
+    } catch {
+      return null
+    }
   }
 }

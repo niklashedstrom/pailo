@@ -36,7 +36,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   font: inherit;
   padding: 0.6rem 0.75rem;
   border: 1px solid #c8c8c0;
@@ -436,4 +437,126 @@ button.link {
   margin-top: 2rem;
   padding-top: 1rem;
   border-top: 1px solid var(--app-border);
+}
+
+/* ------------------------------------------------------------------------
+   Building with words: the wish field, what happened, earlier versions.
+   Outside an app it uses Pailo's colours; inside, the app's --app-* tokens. */
+
+.build-form {
+  margin: 1.5rem 0 1rem;
+}
+
+.build-form textarea {
+  width: 100%;
+  min-height: 5.5rem;
+  resize: vertical;
+}
+
+.build-form .hint,
+.build-notice .hint {
+  margin: 0;
+}
+
+.build-answer {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid #d8d8d0;
+  border-radius: 0.5rem;
+}
+
+.build-answer p {
+  margin: 0 0 0.35rem;
+}
+
+.app-screen .build-answer {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+  border-radius: var(--app-radius);
+}
+
+.not-possible ul {
+  margin: 0.25rem 0;
+  padding-left: 1.25rem;
+}
+
+.not-possible .nearest {
+  display: block;
+  color: #5a5f66;
+}
+
+.build-notice {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid #3d6b4f;
+  background: #fff;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.build-notice .summary {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+}
+
+.change-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.version-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.version-list li {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d8d8d0;
+  border-radius: 0.5rem;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
+.version-list p {
+  margin: 0 0 0.35rem;
+}
+
+.version-meta {
+  font-size: 0.9rem;
+  color: #5a5f66;
+}
+
+.app-screen .build-notice {
+  background: var(--app-surface);
+  border-left-color: var(--app-accent);
+  border-radius: 0 var(--app-radius) var(--app-radius) 0;
+}
+
+.app-screen .versions,
+.app-screen .build-form {
+  margin: 0 0 var(--app-gap);
+}
+
+.app-screen .versions h2 {
+  margin-top: 0;
+}
+
+.app-screen .version-list li {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+  border-radius: var(--app-radius);
+}
+
+.app-screen .version-meta,
+.app-screen .not-possible .nearest {
+  color: var(--app-muted);
+}
+
+.app-screen .change-buttons button.secondary {
+  margin-top: 0;
 }

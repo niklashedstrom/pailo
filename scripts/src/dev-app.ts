@@ -97,7 +97,7 @@ function supabaseStore(url: string, serviceKey: string): DevAppStore {
       // household_id and version are set by the database trigger.
       const { data, error } = await client
         .from('app_versions')
-        .insert({ app_id: appId, description })
+        .insert({ app_id: appId, description, source: 'developer', summary: 'Inlagd av en utvecklare.' })
         .select('version')
         .single()
       if (error) throw error

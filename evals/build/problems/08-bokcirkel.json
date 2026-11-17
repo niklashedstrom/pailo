@@ -1,0 +1,1 @@
+{ "kind": "new", "wish": "Vår bokcirkel: vilka böcker vi har läst, vem som föreslog dem och vilket betyg vi gav, från ett till fem.", "expect": [{ "fieldType": "choice" }] }

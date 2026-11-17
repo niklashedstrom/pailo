@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import type { Collection } from './collection'
-import type { Field } from './fields'
-import { idSchema } from './primitives'
+import type { Collection } from './collection.ts'
+import type { Field } from './fields.ts'
+import { idSchema } from './primitives.ts'
 
 // The stored format of a record's field values (records.data), keyed on
 // field id. A field without a value is absent, never an empty string or

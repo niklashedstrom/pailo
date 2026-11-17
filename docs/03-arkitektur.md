@@ -29,7 +29,7 @@ AI:n får aldrig skriva direkt till en app. Varje ändring valideras mot schemat
 
 - **Appbeskrivning** (`packages/schema`): Zod-schema för samlingar och fält, vyer, inmatning, personer och roller, påminnelser och tema. Har `schemaVersion` och migreringsfunktioner så att gamla appar fungerar när schemat växer.
 - **Runtime** (`apps/runtime`): en app som renderar alla användarappar från beskrivningen. Vyer, formulär genererade från fält, tema-tokens, PWA, Web Share Target, bokmärkesknapp.
-- **Byggtjänst** (Edge Function): Claude → strukturerad output → JSON Patch → validering → ny version. Inga andra verktyg än att föreslå en patch.
+- **Byggtjänst** (Edge Functions `build` och `restore`, kärnan i `packages/schema/src/build`): Claude → strukturerad output → JSON Patch → validering → ny version. Inga andra verktyg än att föreslå en patch. Se avsnittet om byggtjänsten nedan.
 - **Data:** generisk `records`-tabell med jsonb. Nya appar kräver aldrig nya tabeller. Fältvärdena har ett fast format per fälttyp, och runtime kontrollerar dem med `recordDataSchema` innan de sparas:
 
   | Fälttyp | Lagrat värde |
@@ -53,3 +53,40 @@ AI:n får aldrig skriva direkt till en app. Varje ändring valideras mot schemat
 - GitHub Actions: lint, typkontroll, tester, Supabase-migreringar
 - **Eget Supabase-projekt** för det här, skilt från hobbyprojekten, med data i EU
 - **Kostnadsmätning:** varje AI-anrop loggas med tokens och hushåll
+
+## Byggtjänsten
+
+Ett önskemål går så här, och inget steg kan hoppas över:
+
+1. **Inloggning och hushåll.** `build` tar emot `{ householdId, appId?, wish }` med personens inloggning. En ändring kräver att appen hör till det hushåll personen anger.
+2. **Reservation i databasen.** `reserve_ai_call` kontrollerar under ett lås, i ordning: nödbromsen, dygnstaket (dagens kostnad plus pågående anrop gånger en uppskattning), längden (högst 2 000 tecken), 10 i timmen per person, 30 i timmen per hushåll och månadskvoten (20 om inget annat är satt). Stoppas önskemålet anropas inte Claude och inget räknas.
+3. **Claude.** Byggkärnan (`buildChange`) skickar systemprompten med byggstenarnas regler, schemat och två exempel, cachad, och appens beskrivning och önskemålet som data. Svaret är strukturerat: `summary`, `operations` (JSON Patch) och `not_possible`.
+4. **Validering.** Patchen tillämpas på en kopia och resultatet valideras med `parseAppDescription`; en ny app måste också ha en samling, en vy och ett formulär. Är det ogiltigt får Claude ett nytt försök med felen. Två misslyckanden ger ett ärligt besked och inget sparas.
+5. **Sparande.** En giltig beskrivning sparas som ny version med sammanfattning och `source = 'build'`, en ny app tillsammans med sin första version i en transaktion. Det som inte gick sparas i `wishes`.
+6. **Loggen.** `finish_ai_call` fyller i resultat, modell, tokens och kostnad. Ett anrop som aldrig avslutas räknas som misslyckat efter tio minuter, till uppskattad kostnad.
+
+**Ångra och återställning** (`restore`) sparar en tidigare version, lyft till aktuellt schema, som en ny version med `source = 'restore'`. Claude anropas inte och kvoten påverkas inte. Poster ändras aldrig av byggtjänsten, så data i ett borttaget fält finns kvar och syns igen efter en återställning.
+
+**Modell och kostnad.** Standard är `claude-opus-5-5` med `effort: medium` och server-side fallback. Modellen sätts med `BUILD_MODEL` och `BUILD_EFFORT`. Kostnaden räknas från svarets tokens med pristabellen i `packages/schema/src/build/pricing.ts`; en modell utan pris vägras.
+
+**Tester utan kostnad.** CI kör kärnan med en låtsas-Claude, och funktionerna mot den lokala stacken med `PAILO_FAKE_CLAUDE=1` (`supabase/functions/test.env`), där svaren skickas i själva önskemålet. Låtsasläget fungerar bara mot den lokala stacken.
+
+### Slå på och av byggandet
+
+Byggandet är pausat tills ägaren slår på det. I molnet görs det med Supabase SQL-editor eller `psql`:
+
+```sql
+-- Slå på (efter att nyckeln är satt med: supabase secrets set ANTHROPIC_API_KEY=...)
+update public.ai_settings set paused = false;
+-- Nödbroms: pausa allt byggande direkt
+update public.ai_settings set paused = true;
+-- Dygnstak och uppskattning per pågående anrop, i dollar
+update public.ai_settings set daily_cap_usd = 2.00, call_estimate_usd = 0.25;
+-- Annan kvot för ett hushåll
+insert into public.ai_quotas (household_id, monthly_calls) values ('<hushållets id>', 100)
+  on conflict (household_id) do update set monthly_calls = excluded.monthly_calls;
+-- Dagens kostnad
+select sum(cost_usd) from public.ai_calls where started_at >= date_trunc('day', now() at time zone 'Europe/Stockholm') at time zone 'Europe/Stockholm';
+```
+
+Utan nyckel svarar `build` att byggandet är pausat, även om `paused` är av.

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { LIMITS, idSchema, nameSchema } from './primitives'
+import { LIMITS, idSchema, nameSchema } from './primitives.ts'
 
 const base = {
   id: idSchema,

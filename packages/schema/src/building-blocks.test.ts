@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 import allBlocks from '../examples/alla-byggstenar.json'
 import drop from '../examples/drop.json'
 import matschema from '../examples/matschema.json'
-import { ACCESS_LEVELS } from './collection'
-import type { AppDescription } from './description'
-import { fieldSchema } from './fields'
-import { parseAppDescription } from './parse'
-import { THEME_PRESETS } from './theme'
-import { viewSchema } from './views'
+import { ACCESS_LEVELS } from './collection.ts'
+import type { AppDescription } from './description.ts'
+import { fieldSchema } from './fields.ts'
+import { parseAppDescription } from './parse.ts'
+import { THEME_PRESETS } from './theme.ts'
+import { viewSchema } from './views.ts'
 
 // The runtime is tested against this description so that it is proven on the
 // building blocks, not tailored to Drop and the meal plan. These tests make

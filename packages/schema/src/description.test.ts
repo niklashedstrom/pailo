@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { appDescriptionSchema } from './description'
-import { validDescription } from './test-helpers'
+import { appDescriptionSchema } from './description.ts'
+import { validDescription } from './test-helpers.ts'
 
 describe('appDescriptionSchema shape', () => {
   it('accepts a minimal valid description', () => {

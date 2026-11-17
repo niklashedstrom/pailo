@@ -1,13 +1,34 @@
 import { type AppDescription, type RecordData, migrateAppDescription } from '@pailo/schema'
 import { vi } from 'vitest'
-import { type AppRecord, DeniedError, type Household, type Member, type OpenAppResult, type PailoApi } from './api'
+import {
+  type AppRecord,
+  type AppVersion,
+  type BuildResult,
+  DeniedError,
+  type Household,
+  type Member,
+  type NotPossible,
+  type OpenAppResult,
+  type PailoApi,
+  type RestoreResult,
+} from './api'
 
 export interface FakeApp {
   id: string
   householdId: string
   /** Stored descriptions, oldest first; may be invalid on purpose. */
   versions: unknown[]
+  /** Who saved each version and why, same order as versions. */
+  meta?: Omit<AppVersion, 'version'>[]
 }
+
+/**
+ * What the fake build service answers next. 'ok' saves the description as a
+ * new version (or a new app); everything else is returned as it is.
+ */
+export type FakeBuild =
+  | { kind: 'ok'; description: unknown; summary: string; notPossible?: NotPossible[] }
+  | Exclude<BuildResult, { kind: 'ok' }>
 
 export interface FakeState {
   userId: string | null
@@ -17,6 +38,12 @@ export interface FakeState {
   records: (AppRecord & { appId: string })[]
   /** Makes the next record write fail like the database would. */
   refuseNext: 'denied' | 'failed' | null
+  /** Answers for buildApp and changeApp, used in order. */
+  builds: FakeBuild[]
+  /** Builds left this month. */
+  remaining: number
+  /** Makes the next restore answer this instead of restoring. */
+  restoreNext: Exclude<RestoreResult, { kind: 'ok' }> | null
 }
 
 let recordCounter = 0
@@ -40,7 +67,35 @@ export function fakeApi(initial: Partial<FakeState> = {}) {
     apps: [],
     records: [],
     refuseNext: null,
+    builds: [],
+    remaining: 20,
+    restoreNext: null,
     ...initial,
+  }
+
+  const metaOf = (app: FakeApp, index: number): Omit<AppVersion, 'version'> =>
+    app.meta?.[index] ?? { createdAt: now(), createdBy: null, summary: null, source: 'developer' }
+
+  function saveVersion(app: FakeApp, description: unknown, meta: Omit<AppVersion, 'version'>) {
+    const metas = app.versions.map((_, i) => metaOf(app, i))
+    const updated = { ...app, versions: [...app.versions, description], meta: [...metas, meta] }
+    state.apps = state.apps.map((a) => (a.id === app.id ? updated : a))
+    return updated.versions.length
+  }
+
+  function build(householdId: string, appId: string | null): BuildResult {
+    const next = state.builds.shift() ?? { kind: 'failed' }
+    if (next.kind === 'limit' || next.kind === 'not-found') return next
+    state.remaining = Math.max(0, state.remaining - 1)
+    if (next.kind !== 'ok') return next
+    const meta = { createdAt: now(), createdBy: state.userId, summary: next.summary, source: 'build' as const }
+    let app = state.apps.find((a) => a.id === appId)
+    if (!app) {
+      app = { id: `a-new-${state.apps.length + 1}`, householdId, versions: [], meta: [] }
+      state.apps = [...state.apps, app]
+    }
+    const version = saveVersion(app, next.description, meta)
+    return { kind: 'ok', appId: app.id, version, summary: next.summary, notPossible: next.notPossible ?? [] }
   }
 
   function refusal(): Error | null {
@@ -132,6 +187,26 @@ export function fakeApi(initial: Partial<FakeState> = {}) {
       if (error) throw error
       state.records = state.records.filter((r) => r.id !== recordId)
     }),
+    buildApp: vi.fn(async (householdId: string, _wish: string) => build(householdId, null)),
+    changeApp: vi.fn(async (householdId: string, appId: string, _wish: string) => build(householdId, appId)),
+    restoreVersion: vi.fn(async (appId: string, version: number): Promise<RestoreResult> => {
+      if (state.restoreNext) {
+        const answer = state.restoreNext
+        state.restoreNext = null
+        return answer
+      }
+      const app = state.apps.find((a) => a.id === appId)
+      if (!app || version < 1 || version > app.versions.length) return { kind: 'not-found' }
+      const summary = `Appen ser ut som den gjorde i version ${version}.`
+      const saved = saveVersion(app, app.versions[version - 1], { createdAt: now(), createdBy: state.userId, summary, source: 'restore' })
+      return { kind: 'ok', version: saved, summary }
+    }),
+    listVersions: vi.fn(async (appId: string): Promise<AppVersion[]> => {
+      const app = state.apps.find((a) => a.id === appId)
+      if (!app) return []
+      return app.versions.map((_, i) => ({ version: i + 1, ...metaOf(app, i) })).reverse()
+    }),
+    remainingBuilds: vi.fn(async (_householdId: string) => state.remaining),
   } satisfies PailoApi
 
   return { api, state }

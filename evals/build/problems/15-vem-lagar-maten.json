@@ -1,0 +1,1 @@
+{ "kind": "change", "base": "matschema", "wish": "Lägg till vem som lagar maten varje dag.", "expect": [{ "fieldType": "person" }] }

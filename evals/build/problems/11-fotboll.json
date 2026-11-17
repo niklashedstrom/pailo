@@ -1,0 +1,1 @@
+{ "kind": "new", "wish": "Barnens fotbollsträningar och matcher, med tid och plats och vem av oss föräldrar som skjutsar.", "expect": [{ "fieldType": "person" }, { "viewType": "calendar" }] }

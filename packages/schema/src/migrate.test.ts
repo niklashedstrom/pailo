@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { CURRENT_SCHEMA_VERSION } from './description'
-import { appDescriptionJsonSchema } from './json-schema'
-import { migrateAppDescription } from './migrate'
-import { validDescription } from './test-helpers'
+import { CURRENT_SCHEMA_VERSION } from './description.ts'
+import { appDescriptionJsonSchema } from './json-schema.ts'
+import { migrateAppDescription } from './migrate.ts'
+import { validDescription } from './test-helpers.ts'
 
 describe('migrateAppDescription', () => {
   it('upgrades a v0 description to a valid current one', () => {

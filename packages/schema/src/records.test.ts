@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { Collection } from './collection'
-import type { Field } from './fields'
-import { RECORD_LIMITS, parseFieldValue, recordDataSchema } from './records'
+import type { Collection } from './collection.ts'
+import type { Field } from './fields.ts'
+import { RECORD_LIMITS, parseFieldValue, recordDataSchema } from './records.ts'
 
 const MEMBER = '7c9e6679-7425-40de-944b-e07fc1f90ae7'
 const RECORD = '0b5c3f0e-6d1a-4c55-9f6a-2d1f5e9a8b77'

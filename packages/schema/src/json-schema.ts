@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { appDescriptionSchema } from './description'
+import { appDescriptionSchema } from './description.ts'
 
 /**
  * JSON Schema for the current version, used to constrain AI output. It covers

@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { fieldSchema } from './fields'
-import { LIMITS, idSchema, nameSchema } from './primitives'
+import { fieldSchema } from './fields.ts'
+import { LIMITS, idSchema, nameSchema } from './primitives.ts'
 
 /**
  * What household members may do with the collection's records. Admins can
