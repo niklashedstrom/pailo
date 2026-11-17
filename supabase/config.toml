@@ -446,3 +446,8 @@ otp_expiry = 3600
 [remotes.production.auth.mfa.totp]
 enroll_enabled = true
 verify_enabled = true
+
+# The install manifest is fetched by browsers and phones without signing in;
+# it shows only the app's name, icon and colour (supabase/functions/app-manifest).
+[functions.app-manifest]
+verify_jwt = false

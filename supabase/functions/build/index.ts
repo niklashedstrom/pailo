@@ -3,21 +3,19 @@
 // called, and only a valid description is saved.
 import { type BuildOutcome, buildChange, sumUsage } from '../../../packages/schema/src/build/index.ts'
 import { fakeCaller, realCaller } from '../_shared/claude.ts'
-import { json, loadApp, preflight, serviceClient, signedInUser, UUID } from '../_shared/server.ts'
+import { isOwner, json, loadApp, preflight, serviceClient, signedInUser, UUID } from '../_shared/server.ts'
 
 interface BuildRequest {
-  householdId: string
   appId: string | null
   wish: string
 }
 
 function readRequest(body: unknown): BuildRequest | null {
   if (typeof body !== 'object' || body === null) return null
-  const { householdId, appId, wish } = body as Record<string, unknown>
-  if (typeof householdId !== 'string' || !UUID.test(householdId)) return null
+  const { appId, wish } = body as Record<string, unknown>
   if (appId !== undefined && appId !== null && (typeof appId !== 'string' || !UUID.test(appId))) return null
   if (typeof wish !== 'string' || wish.trim() === '') return null
-  return { householdId, appId: (appId as string | null | undefined) ?? null, wish: wish.trim() }
+  return { appId: (appId as string | null | undefined) ?? null, wish: wish.trim() }
 }
 
 const STATUS: Record<BuildOutcome['kind'], string> = {
@@ -38,16 +36,17 @@ Deno.serve(async (request) => {
   const userId = await signedInUser(db, request)
   if (!userId) return json({ outcome: 'signed-out' }, 401)
 
-  // A change needs the app, in the household the person names.
+  // A change needs an app the person owns. Someone else's app looks just
+  // like one that does not exist.
+  if (input.appId !== null && !(await isOwner(db, input.appId, userId))) return json({ outcome: 'not-found' })
   const app = input.appId === null ? null : await loadApp(db, input.appId)
-  if (input.appId !== null && (!app || app.householdId !== input.householdId)) return json({ outcome: 'not-found' })
+  if (input.appId !== null && !app) return json({ outcome: 'not-found' })
 
   const claude = fakeCaller(input.wish) ?? realCaller()
   if (!claude) return json({ outcome: 'limit', reason: 'paused' })
 
   const { data: reservation, error: reserveError } = await db.rpc('reserve_ai_call', {
     p_user: userId,
-    p_household: input.householdId,
     p_app: input.appId,
     p_kind: app ? 'change' : 'create',
     p_message_length: input.wish.length,
@@ -62,6 +61,7 @@ Deno.serve(async (request) => {
 
   let outcome: BuildOutcome | null = null
   let savedAppId: string | null = null
+  let savedSlug: string | null = null
   let savedVersion: number | null = null
   let crashed = false
   try {
@@ -86,7 +86,6 @@ Deno.serve(async (request) => {
         savedVersion = data.version
       } else {
         const { data, error } = await db.rpc('create_built_app', {
-          p_household: input.householdId,
           p_user: userId,
           p_name: outcome.description.name,
           p_description: outcome.description,
@@ -94,14 +93,14 @@ Deno.serve(async (request) => {
           p_ai_call: callId,
         })
         if (error) throw error
-        savedAppId = data
+        savedAppId = data.id
+        savedSlug = data.slug
         savedVersion = 1
       }
     }
 
     if (outcome.kind === 'changed' || outcome.kind === 'not-possible') {
       const wishes = outcome.notPossible.map((item) => ({
-        household_id: input.householdId,
         app_id: savedAppId ?? app?.id ?? null,
         text: item.wish.slice(0, 1000),
         created_by: userId,
@@ -136,6 +135,7 @@ Deno.serve(async (request) => {
     return json({
       outcome: 'ok',
       appId: savedAppId,
+      slug: savedSlug,
       version: savedVersion,
       summary: outcome.summary,
       notPossible: outcome.notPossible,

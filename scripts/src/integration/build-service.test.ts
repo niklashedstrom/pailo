@@ -1,4 +1,4 @@
-// The build and restore functions against the LOCAL stack, with a fake Claude
+// The build, restore, export and app-manifest functions against the LOCAL stack, with a fake Claude
 // (answers travel inside the wish). Needs `supabase start` and
 // `supabase functions serve --env-file supabase/functions/test.env`.
 // Run with `npm run test:integration`.
@@ -27,9 +27,8 @@ const run = `${Date.now()}`
 const people = ['anna', 'bertil', 'cecilia'] as const
 const ids: Record<string, string> = {}
 const tokens: Record<string, string> = {}
-let householdA = ''
-let householdB = ''
 let appA = ''
+let slugA = ''
 
 type Op = { op: string; path: string; from?: string; value?: unknown }
 function reply(operations: Op[], notPossible: { wish: string; nearest: string | null }[] = [], summary = 'Klart.') {
@@ -46,7 +45,7 @@ function reply(operations: Op[], notPossible: { wish: string; nearest: string | 
 }
 const fake = (...answers: unknown[]) => JSON.stringify({ fake: answers })
 
-async function call(fn: 'build' | 'restore', person: string | null, body: unknown) {
+async function call(fn: 'build' | 'restore' | 'export', person: string | null, body: unknown) {
   const response = await fetch(`${url}/functions/v1/${fn}`, {
     method: 'POST',
     headers: {
@@ -100,19 +99,14 @@ beforeAll(async () => {
     tokens[person] = session.session!.access_token
   }
 
-  const { data: households } = await admin
-    .from('households')
-    .insert([{ name: `A ${run}` }, { name: `B ${run}` }])
-    .select('id, name')
-  householdA = households!.find((h) => h.name.startsWith('A'))!.id
-  householdB = households!.find((h) => h.name.startsWith('B'))!.id
-  await admin.from('members').insert([
-    { household_id: householdA, user_id: ids.anna, role: 'admin', display_name: 'Anna' },
-    { household_id: householdA, user_id: ids.bertil, role: 'member', display_name: 'Bertil' },
-    { household_id: householdB, user_id: ids.cecilia, role: 'admin', display_name: 'Cecilia' },
-  ])
-  const { data: app } = await admin.from('apps').insert({ household_id: householdA, name: 'Drop' }).select('id').single()
+  // Anna owns Drop and has shared it with Bertil; Cecilia is in no app.
+  const { data: app } = await admin.from('apps').insert({ name: 'Drop', created_by: ids.anna }).select('id, slug').single()
   appA = app!.id
+  slugA = app!.slug
+  await admin.from('app_members').insert([
+    { app_id: appA, user_id: ids.anna, role: 'owner', display_name: 'Anna' },
+    { app_id: appA, user_id: ids.bertil, role: 'member', display_name: 'Bertil' },
+  ])
   await admin.from('app_versions').insert({ app_id: appA, description: drop, created_by: ids.anna })
   await admin.from('records').insert({
     app_id: appA,
@@ -123,109 +117,116 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await admin.from('households').delete().in('id', [householdA, householdB])
+  // Deleting an owner's account deletes their apps.
   for (const person of people) await admin.auth.admin.deleteUser(ids[person])
   await admin.from('ai_settings').update(savedSettings).eq('id', true)
 })
 
 describe('build: changing an app', () => {
   it('saves a valid change as a new version and logs the call', async () => {
-    const { body } = await call('build', 'bertil', {
-      householdId: householdA,
+    const { body } = await call('build', 'anna', {
       appId: appA,
       wish: fake(reply([addDate], [], 'Nu kan du skriva ett datum.')),
     })
     expect(body).toMatchObject({ outcome: 'ok', appId: appA, version: 2, summary: 'Nu kan du skriva ett datum.' })
     const version = await latest(admin, appA)
-    expect(version).toMatchObject({ version: 2, source: 'build', summary: 'Nu kan du skriva ett datum.', created_by: ids.bertil })
+    expect(version).toMatchObject({ version: 2, source: 'build', summary: 'Nu kan du skriva ett datum.', created_by: ids.anna })
     const { data: logged } = await admin.from('ai_calls').select('*').eq('id', version.ai_call_id).single()
-    expect(logged).toMatchObject({ status: 'ok', kind: 'change', user_id: ids.bertil, model: 'claude-opus-5-5', attempts: 1 })
+    expect(logged).toMatchObject({ status: 'ok', kind: 'change', user_id: ids.anna, app_id: appA, model: 'claude-opus-5-5', attempts: 1 })
     expect(Number(logged!.cost_usd)).toBeCloseTo(0.0148, 6)
   })
 
   it('saves nothing but the wish when nothing is possible', async () => {
     const notPossible = [{ wish: 'skicka sms till barnen', nearest: 'En påminnelse' }]
-    const { body } = await call('build', 'bertil', { householdId: householdA, appId: appA, wish: fake(reply([], notPossible)) })
+    const { body } = await call('build', 'anna', { appId: appA, wish: fake(reply([], notPossible)) })
     expect(body).toMatchObject({ outcome: 'not-possible', notPossible })
     expect((await latest(admin, appA)).version).toBe(2)
-    const { data: wishes } = await admin.from('wishes').select('text, app_id, created_by').eq('household_id', householdA)
-    expect(wishes).toEqual([{ text: 'skicka sms till barnen', app_id: appA, created_by: ids.bertil }])
+    const { data: wishes } = await admin.from('wishes').select('text, app_id, created_by').eq('app_id', appA)
+    expect(wishes).toEqual([{ text: 'skicka sms till barnen', app_id: appA, created_by: ids.anna }])
   })
 
   it('saves no version after two invalid answers', async () => {
-    const { body } = await call('build', 'anna', { householdId: householdA, appId: appA, wish: fake(reply([badView]), reply([badView])) })
+    const { body } = await call('build', 'anna', { appId: appA, wish: fake(reply([badView]), reply([badView])) })
     expect(body).toEqual({ outcome: 'failed' })
     expect((await latest(admin, appA)).version).toBe(2)
-    const { data } = await admin.from('ai_calls').select('status, attempts').eq('user_id', ids.anna).single()
+    const { data } = await admin.from('ai_calls').select('status, attempts').eq('user_id', ids.anna).eq('status', 'invalid').single()
     expect(data).toEqual({ status: 'invalid', attempts: 2 })
   })
 
   it('reports a failure from the AI service and logs it', async () => {
-    const { body } = await call('build', 'anna', { householdId: householdA, appId: appA, wish: fake('error') })
+    const { body } = await call('build', 'anna', { appId: appA, wish: fake('error') })
     expect(body).toEqual({ outcome: 'failed' })
     expect(await count('ai_calls', 'status', 'failed')).toBeGreaterThan(0)
   })
 
-  it('refuses another household without calling the AI service', async () => {
-    const before = await count('ai_calls', 'household_id', householdB)
-    const asOwn = await call('build', 'cecilia', { householdId: householdB, appId: appA, wish: fake(reply([addDate])) })
-    const asTheirs = await call('build', 'cecilia', { householdId: householdA, appId: appA, wish: fake(reply([addDate])) })
-    expect(asOwn.body).toEqual({ outcome: 'not-found' })
-    expect(asTheirs.body).toEqual({ outcome: 'not-found' })
-    expect(await count('ai_calls', 'household_id', householdB)).toBe(before)
+  it('refuses someone outside the app without calling the AI service', async () => {
+    const before = await count('ai_calls', 'user_id', ids.cecilia)
+    const { body } = await call('build', 'cecilia', { appId: appA, wish: fake(reply([addDate])) })
+    expect(body).toEqual({ outcome: 'not-found' })
+    expect(await count('ai_calls', 'user_id', ids.cecilia)).toBe(before)
+    expect((await latest(admin, appA)).version).toBe(2)
+  })
+
+  it('refuses a member who is not the owner without calling the AI service', async () => {
+    const { body } = await call('build', 'bertil', { appId: appA, wish: fake(reply([addDate])) })
+    expect(body).toEqual({ outcome: 'not-found' })
+    expect(await count('ai_calls', 'user_id', ids.bertil)).toBe(0)
     expect((await latest(admin, appA)).version).toBe(2)
   })
 
   it('refuses someone who is not signed in', async () => {
-    const { status } = await call('build', null, { householdId: householdA, appId: appA, wish: 'hej' })
+    const { status } = await call('build', null, { appId: appA, wish: 'hej' })
     expect(status).toBe(401)
   })
 
   it('stops while building is paused', async () => {
     await admin.from('ai_settings').update({ paused: true }).eq('id', true)
-    const { body } = await call('build', 'anna', { householdId: householdA, appId: appA, wish: fake(reply([addDate])) })
+    const { body } = await call('build', 'anna', { appId: appA, wish: fake(reply([addDate])) })
     await admin.from('ai_settings').update({ paused: false }).eq('id', true)
     expect(body).toEqual({ outcome: 'limit', reason: 'paused', retryAt: null })
   })
 
-  it('stops when the monthly quota is used up and says when it fills up', async () => {
-    const used = await count('ai_calls', 'household_id', householdA)
-    await admin.from('ai_quotas').insert({ household_id: householdA, monthly_calls: used })
-    const { body } = await call('build', 'anna', { householdId: householdA, appId: appA, wish: fake(reply([addDate])) })
-    await admin.from('ai_quotas').delete().eq('household_id', householdA)
+  it('stops when the person\'s monthly quota is used up and says when it fills up', async () => {
+    const used = await count('ai_calls', 'user_id', ids.anna)
+    await admin.from('ai_quotas').insert({ user_id: ids.anna, monthly_calls: used })
+    const { body } = await call('build', 'anna', { appId: appA, wish: fake(reply([addDate])) })
+    await admin.from('ai_quotas').delete().eq('user_id', ids.anna)
     expect(body).toMatchObject({ outcome: 'limit', reason: 'quota' })
     expect(new Date(body.retryAt).getTime()).toBeGreaterThan(Date.now())
   })
 })
 
 describe('build: new apps', () => {
-  it('creates the app and its first version', async () => {
-    const { body } = await call('build', 'cecilia', { householdId: householdB, wish: fake(reply(newApp, [], 'Nu kan ni hålla koll på läxor.')) })
+  it('creates the app with the builder as owner, its address and first version', async () => {
+    const { body } = await call('build', 'cecilia', { wish: fake(reply(newApp, [], 'Nu kan ni hålla koll på läxor.')) })
     expect(body).toMatchObject({ outcome: 'ok', version: 1 })
-    const { data: app } = await admin.from('apps').select('household_id, name, created_by').eq('id', body.appId).single()
-    expect(app).toEqual({ household_id: householdB, name: `Läxor ${run}`, created_by: ids.cecilia })
+    expect(body.slug).toMatch(new RegExp(`^laxor-${run.slice(0, 18)}`))
+    const { data: app } = await admin.from('apps').select('name, created_by, slug').eq('id', body.appId).single()
+    expect(app).toEqual({ name: `Läxor ${run}`, created_by: ids.cecilia, slug: body.slug })
+    const { data: members } = await admin.from('app_members').select('user_id, role').eq('app_id', body.appId)
+    expect(members).toEqual([{ user_id: ids.cecilia, role: 'owner' }])
     expect(await latest(admin, body.appId)).toMatchObject({ source: 'build', summary: 'Nu kan ni hålla koll på läxor.' })
   })
 
   it('leaves no app behind when the answer never becomes usable', async () => {
-    const before = await count('apps', 'household_id', householdB)
+    const before = await count('apps', 'created_by', ids.cecilia)
     const tooSmall = newApp.slice(0, 3)
-    const { body } = await call('build', 'cecilia', { householdId: householdB, wish: fake(reply(tooSmall), reply(tooSmall)) })
+    const { body } = await call('build', 'cecilia', { wish: fake(reply(tooSmall), reply(tooSmall)) })
     expect(body).toEqual({ outcome: 'failed' })
-    expect(await count('apps', 'household_id', householdB)).toBe(before)
+    expect(await count('apps', 'created_by', ids.cecilia)).toBe(before)
   })
 })
 
 describe('restore', () => {
   it('saves an earlier version again without using the quota', async () => {
-    const calls = await count('ai_calls', 'household_id', householdA)
-    const { body } = await call('restore', 'bertil', { appId: appA, version: 1 })
+    const calls = await count('ai_calls', 'user_id', ids.anna)
+    const { body } = await call('restore', 'anna', { appId: appA, version: 1 })
     expect(body).toMatchObject({ outcome: 'ok', appId: appA, version: 3 })
     expect(body.summary).toMatch(/^Appen ser ut som den gjorde /)
     const version = await latest(admin, appA)
-    expect(version).toMatchObject({ source: 'restore', restored_from: 1, created_by: ids.bertil })
+    expect(version).toMatchObject({ source: 'restore', restored_from: 1, created_by: ids.anna })
     expect(version.description).toEqual(drop)
-    expect(await count('ai_calls', 'household_id', householdA)).toBe(calls)
+    expect(await count('ai_calls', 'user_id', ids.anna)).toBe(calls)
   })
 
   it('keeps data when a field is removed and shows it again after undo', async () => {
@@ -233,7 +234,7 @@ describe('restore', () => {
       { op: 'remove', path: '/views/0/fields/2' },
       { op: 'remove', path: '/collections/0/fields/3' },
     ]
-    const { body } = await call('build', 'anna', { householdId: householdA, appId: appA, wish: fake(reply(removeTags)) })
+    const { body } = await call('build', 'anna', { appId: appA, wish: fake(reply(removeTags)) })
     expect(body).toMatchObject({ outcome: 'ok', version: 4 })
     const { data: record } = await admin.from('records').select('data').eq('app_id', appA).single()
     expect(record!.data).toEqual({ title: 'Pasta', tags: ['recept'] })
@@ -247,14 +248,61 @@ describe('restore', () => {
   it('lifts an old description to the current schema', async () => {
     await admin.from('app_versions').insert({ app_id: appA, description: { schemaVersion: 0, name: 'Gammal' }, created_by: ids.anna })
     const old = (await latest(admin, appA)).version
-    await call('build', 'anna', { householdId: householdA, appId: appA, wish: fake(reply([addDate])) }) // a newer version on top
+    await call('build', 'anna', { appId: appA, wish: fake(reply([addDate])) }) // a newer version on top
     const { body } = await call('restore', 'anna', { appId: appA, version: old })
     expect(body).toMatchObject({ outcome: 'ok' })
     expect((await latest(admin, appA)).description).toMatchObject({ schemaVersion: 1, name: 'Gammal' })
   })
 
-  it('refuses another household', async () => {
-    const { body } = await call('restore', 'cecilia', { appId: appA, version: 1 })
-    expect(body).toEqual({ outcome: 'not-found' })
+  it('refuses a member who is not the owner, and someone outside the app', async () => {
+    const before = (await latest(admin, appA)).version
+    expect((await call('restore', 'bertil', { appId: appA, version: 1 })).body).toEqual({ outcome: 'not-found' })
+    expect((await call('restore', 'cecilia', { appId: appA, version: 1 })).body).toEqual({ outcome: 'not-found' })
+    expect((await latest(admin, appA)).version).toBe(before)
+  })
+})
+
+describe('export', () => {
+  it('gives the owner the description, every record and the members, and logs it', async () => {
+    const { body } = await call('export', 'anna', { appId: appA })
+    expect(body).toMatchObject({ outcome: 'ok', appId: appA, me: ids.anna })
+    expect(body.description).toEqual(await latest(admin, appA).then((v) => v.description))
+    expect(body.records).toEqual([
+      expect.objectContaining({ collection: 'drops', data: { title: 'Pasta', tags: ['recept'] }, created_by: ids.anna }),
+    ])
+    expect(body.members).toEqual([
+      { id: ids.anna, displayName: 'Anna', owner: true },
+      { id: ids.bertil, displayName: 'Bertil', owner: false },
+    ])
+    expect(await count('app_exports', 'user_id', ids.anna)).toBe(1)
+  })
+
+  it('refuses a member and someone outside the app, and logs nothing for them', async () => {
+    expect((await call('export', 'bertil', { appId: appA })).body).toEqual({ outcome: 'not-found' })
+    expect((await call('export', 'cecilia', { appId: appA })).body).toEqual({ outcome: 'not-found' })
+    expect((await call('export', null, { appId: appA })).status).toBe(401)
+    expect(await count('app_exports', 'app_id', appA)).toBe(1)
+  })
+})
+
+describe('app-manifest', () => {
+  const manifest = (slug: string) => fetch(`${url}/functions/v1/app-manifest?slug=${encodeURIComponent(slug)}`)
+
+  it('installs the app at its own address without signing in, with only its name, icon and colour', async () => {
+    const response = await manifest(slugA)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toMatch(/^application\/manifest\+json/)
+    const body = (await response.json()) as { icons: { src: string }[] }
+    expect(body).toMatchObject({ start_url: `/a/${slugA}/`, scope: `/a/${slugA}/`, display: 'standalone' })
+    expect(body.icons.map((i: { src: string }) => i.src)).toEqual([expect.stringMatching(/^\/icons\/[a-z]+-[a-z]+-192\.png$/), expect.stringMatching(/-512\.png$/)])
+    expect(Object.keys(body).sort()).toEqual(
+      ['background_color', 'display', 'icons', 'id', 'lang', 'name', 'scope', 'short_name', 'start_url', 'theme_color'],
+    )
+    expect(JSON.stringify(body)).not.toMatch(/Pasta|drops|Bertil|Anna/)
+  })
+
+  it('knows nothing about an unknown or malformed short name', async () => {
+    expect((await manifest('finns-inte-abc123')).status).toBe(404)
+    expect((await manifest('../export')).status).toBe(404)
   })
 })

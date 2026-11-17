@@ -1,10 +1,10 @@
-// Developer tool: validate an app description from a file and load it into a
-// household in the LOCAL database, so the runtime can be tried before the
-// build service exists (M4). Pailo has no ready-made apps; this is for
+// Developer tool: validate an app description from a file and load it into the
+// LOCAL database as an app owned by a person, so the runtime can be tried
+// without the build service. Pailo has no ready-made apps; this is for
 // development only and refuses to talk to anything but localhost.
 //
-//   npm run dev:app -- <household-id> <file.json>   creates an app (version 1)
-//   npm run dev:app -- <app-id> <file.json>         saves the file as a new version
+//   npm run dev:app -- <email | user-id> <file.json>   creates an app the person owns (version 1)
+//   npm run dev:app -- <app-id> <file.json>            saves the file as a new version
 
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -52,49 +52,63 @@ export function validate(input: unknown): AppDescription {
 
 /** The small part of the database the tool needs, so tests can fake it. */
 export interface DevAppStore {
-  findApp(id: string): Promise<{ id: string } | null>
-  householdExists(id: string): Promise<boolean>
-  createApp(householdId: string, name: string): Promise<string>
+  findApp(id: string): Promise<{ id: string; slug: string } | null>
+  /** The person's user id, looked up by id or email, or null. */
+  findPerson(idOrEmail: string): Promise<string | null>
+  /** Creates the app with the person as its owner; returns its id and short name. */
+  createApp(ownerId: string, name: string): Promise<{ id: string; slug: string }>
   addVersion(appId: string, description: AppDescription): Promise<number>
 }
 
-export type DevAppResult = { kind: 'created'; appId: string } | { kind: 'version'; appId: string; version: number }
+export type DevAppResult =
+  | { kind: 'created'; appId: string; slug: string }
+  | { kind: 'version'; appId: string; slug: string; version: number }
 
 export async function loadApp(store: DevAppStore, targetId: string, input: unknown): Promise<DevAppResult> {
   const description = validate(input)
   const existing = await store.findApp(targetId)
   if (existing) {
     const version = await store.addVersion(existing.id, description)
-    return { kind: 'version', appId: existing.id, version }
+    return { kind: 'version', appId: existing.id, slug: existing.slug, version }
   }
-  if (!(await store.householdExists(targetId))) {
-    throw new DevAppError(`No app or household with id ${targetId} in the local database.`)
+  const ownerId = await store.findPerson(targetId)
+  if (!ownerId) {
+    throw new DevAppError(`No app or person ${targetId} in the local database. Sign in once first, or give an app id.`)
   }
-  const appId = await store.createApp(targetId, description.name)
-  await store.addVersion(appId, description)
-  return { kind: 'created', appId }
+  const app = await store.createApp(ownerId, description.name)
+  await store.addVersion(app.id, description)
+  return { kind: 'created', appId: app.id, slug: app.slug }
 }
 
 function supabaseStore(url: string, serviceKey: string): DevAppStore {
   const client = createClient(url, serviceKey, { auth: { persistSession: false } })
   return {
     async findApp(id) {
-      const { data, error } = await client.from('apps').select('id').eq('id', id).maybeSingle()
+      const { data, error } = await client.from('apps').select('id, slug').eq('id', id).maybeSingle()
       if (error && error.code !== '22P02') throw error
       return data
     },
-    async householdExists(id) {
-      const { data, error } = await client.from('households').select('id').eq('id', id).maybeSingle()
-      if (error && error.code !== '22P02') throw error
-      return data !== null
+    async findPerson(idOrEmail) {
+      const wanted = idOrEmail.toLowerCase()
+      for (let page = 1; ; page++) {
+        const { data, error } = await client.auth.admin.listUsers({ page, perPage: 200 })
+        if (error) throw error
+        const user = data.users.find((u) => u.id === wanted || u.email?.toLowerCase() === wanted)
+        if (user) return user.id
+        if (data.users.length < 200) return null
+      }
     },
-    async createApp(householdId, name) {
-      const { data, error } = await client.from('apps').insert({ household_id: householdId, name }).select('id').single()
+    async createApp(ownerId, name) {
+      const { data, error } = await client.from('apps').insert({ name, created_by: ownerId }).select('id, slug').single()
       if (error) throw error
-      return data.id as string
+      const { error: memberError } = await client
+        .from('app_members')
+        .insert({ app_id: data.id, user_id: ownerId, role: 'owner', display_name: 'Utvecklare' })
+      if (memberError) throw memberError
+      return data as { id: string; slug: string }
     },
     async addVersion(appId, description) {
-      // household_id and version are set by the database trigger.
+      // The version number is set by the database trigger.
       const { data, error } = await client
         .from('app_versions')
         .insert({ app_id: appId, description, source: 'developer', summary: 'Inlagd av en utvecklare.' })
@@ -109,14 +123,14 @@ function supabaseStore(url: string, serviceKey: string): DevAppStore {
 async function main(args: string[]) {
   const [targetId, file] = args
   if (!targetId || !file) {
-    throw new DevAppError('Usage: npm run dev:app -- <household-id | app-id> <description.json>')
+    throw new DevAppError('Usage: npm run dev:app -- <email | user-id | app-id> <description.json>')
   }
   const path = resolve(process.env.INIT_CWD ?? process.cwd(), file)
   const input: unknown = JSON.parse(readFileSync(path, 'utf8'))
   const { url, serviceKey } = parseStatusEnv(execFileSync('supabase', ['status', '-o', 'env'], { encoding: 'utf8' }))
   assertLocal(url)
   const result = await loadApp(supabaseStore(url, serviceKey), targetId, input)
-  const address = `http://localhost:5173/app/${result.appId}`
+  const address = `http://localhost:5173/a/${result.slug}`
   console.log(
     result.kind === 'created'
       ? `Created the app. Open ${address}`
