@@ -15,10 +15,10 @@ export function limitMessage(reason: LimitReason, retryAt: string | null): strin
       return 'Skriv lite kortare, högst 2 000 tecken.'
     case 'rate-person':
       return `Du har gjort många ändringar på kort tid. Försök igen${at ? ` efter kl. ${time.format(at)}` : ' om en stund'}.`
-    case 'rate-household':
-      return `Hushållet har gjort många ändringar på kort tid. Försök igen${at ? ` efter kl. ${time.format(at)}` : ' om en stund'}.`
+    case 'rate-app':
+      return `Appen har ändrats många gånger på kort tid. Försök igen${at ? ` efter kl. ${time.format(at)}` : ' om en stund'}.`
     case 'quota':
-      return `Hushållets ändringar för den här månaden är slut. De fylls på${at ? ` den ${day.format(at)}` : ' nästa månad'}.`
+      return `Dina ändringar för den här månaden är slut. De fylls på${at ? ` den ${day.format(at)}` : ' nästa månad'}.`
   }
 }
 

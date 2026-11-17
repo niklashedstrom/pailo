@@ -22,9 +22,10 @@ export const rawMealPlan = mealPlanJson
 
 export const ANNA = '7c9e6679-7425-40de-944b-e07fc1f90ae7'
 export const BERTIL = '9b2f4e1a-3c5d-4e6f-8a7b-0c1d2e3f4a5b'
+export const CECILIA = '3f1e2d4c-5b6a-4789-8abc-def012345678'
 
 export const members: Member[] = [
-  { userId: ANNA, displayName: 'Anna', role: 'admin' },
+  { userId: ANNA, displayName: 'Anna', role: 'owner' },
   { userId: BERTIL, displayName: 'Bertil', role: 'member' },
 ]
 

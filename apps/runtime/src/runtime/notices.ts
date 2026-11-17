@@ -1,6 +1,6 @@
 import type { Notice } from './Building'
 
-// What the build service just did, carried from the household page to the
+// What the build service just did, carried from the list of apps to the
 // app it opens. Only lives in memory: a reload simply shows the app.
 const notices = new Map<string, Notice>()
 

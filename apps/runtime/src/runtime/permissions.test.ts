@@ -15,10 +15,10 @@ describe('permissions', () => {
     ['add', 'member', OTHER, true, false, false],
     ['read', 'member', ME, false, false, false],
     ['read', 'member', OTHER, false, false, false],
-    ['edit', 'admin', OTHER, true, true, true],
-    ['add', 'admin', OTHER, true, true, true],
-    ['read', 'admin', OTHER, true, true, true],
-    ['read', 'admin', ME, true, true, true],
+    ['edit', 'owner', OTHER, true, true, true],
+    ['add', 'owner', OTHER, true, true, true],
+    ['read', 'owner', OTHER, true, true, true],
+    ['read', 'owner', ME, true, true, true],
   ] as const)('%s as %s on a record by %s', (access, role, by, canCreate, canEdit, canDelete) => {
     expect(permissions(access, role, by, ME)).toEqual({ canCreate, canEdit, canDelete })
   })

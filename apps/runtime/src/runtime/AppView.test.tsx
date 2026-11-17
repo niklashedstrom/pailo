@@ -2,30 +2,26 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import App from '../App'
-import type { Household, Role } from '../api'
 import { type FakeState, fakeApi, fakeApp } from '../test-helpers'
-import { ANNA, BERTIL, members, rawAllBlocks, rawDrop, rawMealPlan } from '../test-fixtures'
+import { ANNA, BERTIL, CECILIA, members, rawAllBlocks, rawDrop, rawMealPlan } from '../test-fixtures'
 import { PALETTE_TOKENS } from './theme/tokens'
 
 // Wednesday 11 November 2026, 11:00 in Sweden.
 const NOW = new Date(Date.UTC(2026, 10, 11, 10, 0))
 
-function household(role: Role): Household {
-  return { id: 'h-1', name: 'Familjen', role }
-}
-
-function setup(options: { path?: string; role?: Role; userId?: string; state?: Partial<FakeState> } = {}) {
+// Anna owns every app and shares it with Bertil; Cecilia owns a-other alone.
+// Anna works in the workshop (/app/<id>); Bertil uses the app on its own
+// address (/a/<id>-abc123).
+function setup(options: { path?: string; userId?: string; state?: Partial<FakeState> } = {}) {
   window.history.replaceState(null, '', options.path ?? '/app/a-meal')
   const { api, state } = fakeApi({
     userId: options.userId ?? ANNA,
-    households: [household(options.role ?? 'admin')],
-    members: { 'h-1': members },
     apps: [
-      fakeApp('a-meal', 'h-1', rawMealPlan),
-      fakeApp('a-drop', 'h-1', rawDrop),
-      fakeApp('a-blocks', 'h-1', rawAllBlocks),
-      fakeApp('a-other', 'h-other', rawDrop),
-      fakeApp('a-broken', 'h-1', { ...rawDrop, views: [] }),
+      fakeApp('a-meal', members, rawMealPlan),
+      fakeApp('a-drop', members, rawDrop),
+      fakeApp('a-blocks', members, rawAllBlocks),
+      fakeApp('a-other', [{ userId: CECILIA, displayName: 'Cecilia', role: 'owner' }], rawDrop),
+      fakeApp('a-broken', members, { ...rawDrop, views: [] }),
     ],
     ...options.state,
   })
@@ -62,8 +58,8 @@ describe('opening an app', () => {
     setup({ path })
     expect(await screen.findByRole('heading', { name: 'Appen kunde inte hittas' })).toBeInTheDocument()
     expect(screen.queryByText('Drop')).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Till hushållet' }))
-    expect(await screen.findByRole('heading', { name: 'Familjen' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Till mina appar' }))
+    expect(await screen.findByRole('heading', { name: 'Mina appar' })).toBeInTheDocument()
   })
 
   it('does not show an app whose description does not validate', async () => {
@@ -258,7 +254,7 @@ describe('forms', () => {
 
 describe('what a member may do', () => {
   it('hides creating, editing and deleting in a read collection', async () => {
-    const { state } = setup({ path: '/app/a-blocks/v-oversikt', role: 'member', userId: BERTIL })
+    const { state } = setup({ path: '/a/a-blocks-abc123/v-oversikt', userId: BERTIL })
     create(state, 'a-blocks', 'qx-arkiv', { 'a-anteckning': 'Arkiverat' })
     await userEvent.click(await screen.findByRole('button', { name: /Arkiverat/ }))
     expect(screen.queryByRole('button', { name: 'Spara' })).not.toBeInTheDocument()
@@ -270,7 +266,7 @@ describe('what a member may do', () => {
   })
 
   it("lets a member read but not change someone else's record under add", async () => {
-    const { state } = setup({ path: '/app/a-drop', role: 'member', userId: BERTIL })
+    const { state } = setup({ path: '/a/a-drop-abc123', userId: BERTIL })
     create(state, 'a-drop', 'drops', { title: 'Annas länk' }, ANNA)
     create(state, 'a-drop', 'drops', { title: 'Bertils länk' }, BERTIL)
     await userEvent.click(await screen.findByRole('button', { name: /Annas länk/ }))
@@ -320,14 +316,14 @@ describe('theme', () => {
     expect(appRoot.style.getPropertyValue('--app-radius')).toBe('18px')
     expect(container.querySelector('main')!.getAttribute('style')).toBeNull()
 
-    await userEvent.click(screen.getByRole('link', { name: '← Till hushållet' }))
+    await userEvent.click(screen.getByRole('link', { name: '← Mina appar' }))
     await waitFor(() => expect(container.querySelector('.app-screen')).toBeNull())
   })
 
   it("uses the preset's defaults when the description only names a preset", async () => {
     const { container } = setup({
       path: '/app/a-plain',
-      state: { apps: [fakeApp('a-plain', 'h-1', { ...rawDrop, theme: { preset: 'strict' } })] },
+      state: { apps: [fakeApp('a-plain', members, { ...rawDrop, theme: { preset: 'strict' } })] },
     })
     await screen.findByRole('heading', { name: 'Drop' })
     const appRoot = container.querySelector<HTMLElement>('.app-screen')!
@@ -337,7 +333,7 @@ describe('theme', () => {
 })
 
 describe('done criterion for M3', () => {
-  it('runs the meal plan and Drop for two people in the same household', async () => {
+  it('runs the meal plan and Drop for two people who share them', async () => {
     const { api, state, unmount } = setup()
 
     // Anna adds a dish and plans it for Wednesday.
@@ -352,11 +348,10 @@ describe('done criterion for M3', () => {
     expect((await screen.findByText('onsdag 11 november')).closest('li')).toHaveTextContent('Lasagne')
     unmount()
 
-    // Bertil, an ordinary member, sees it and changes who cooks.
+    // Bertil, an ordinary member, sees it on the app's own address and changes who cooks.
     state.userId = BERTIL
-    state.households = [household('member')]
-    window.history.replaceState(null, '', '/app/a-meal')
-    render(<App api={api} now={NOW} />)
+    window.history.replaceState(null, '', '/a/a-meal-abc123')
+    const second = render(<App api={api} now={NOW} />)
     const wednesday = (await screen.findByText('onsdag 11 november')).closest('li')!
     expect(wednesday).toHaveTextContent('Lasagne')
     expect(wednesday).toHaveTextContent('Anna')
@@ -367,9 +362,9 @@ describe('done criterion for M3', () => {
     expect(state.records.find((r) => r.collection === 'maltider')?.data.lagar).toEqual({ member: BERTIL })
 
     // Bertil saves a link in Drop, and Anna sees it.
-    await userEvent.click(screen.getByRole('link', { name: '← Till hushållet' }))
-    const dropLinks = await screen.findAllByRole('link', { name: /Drop/ })
-    await userEvent.click(dropLinks.find((link) => link.getAttribute('href') === '/app/a-drop')!)
+    second.unmount()
+    window.history.replaceState(null, '', '/a/a-drop-abc123')
+    render(<App api={api} now={NOW} />)
     await userEvent.click(await screen.findByRole('button', { name: 'Spara något' }))
     await userEvent.type(screen.getByLabelText(/Titel/), 'Bra recept')
     await userEvent.type(screen.getByLabelText('Länk'), 'https://www.ica.se/recept')
@@ -377,7 +372,6 @@ describe('done criterion for M3', () => {
     expect(await screen.findByText('Bra recept')).toBeInTheDocument()
 
     state.userId = ANNA
-    state.households = [household('admin')]
     act(() => document.dispatchEvent(new Event('visibilitychange')))
     expect(await screen.findByRole('link', { name: 'ica.se/recept' })).toBeInTheDocument()
   })
@@ -427,7 +421,7 @@ describe('changing the app with words', () => {
       state: { builds: [{ kind: 'ok', description: withDate(), summary: 'Nu finns ett datum på varje sak.' }] },
     })
     await change('lägg till datum')
-    expect(api.changeApp).toHaveBeenCalledWith('h-1', 'a-drop', 'lägg till datum')
+    expect(api.changeApp).toHaveBeenCalledWith('a-drop', 'lägg till datum')
     expect(await screen.findByRole('status', { name: 'Ändringen' })).toHaveTextContent('Nu finns ett datum på varje sak.')
     await userEvent.click(screen.getByRole('button', { name: 'Spara något' }))
     expect(screen.getByLabelText('Datum')).toBeInTheDocument()
@@ -475,7 +469,7 @@ describe('earlier versions', () => {
   function threeVersions() {
     const v2 = { ...rawDrop, name: 'Drop 2' }
     const v3 = { ...rawDrop, name: 'Drop 3' }
-    const app = fakeApp('a-drop', 'h-1', rawDrop)
+    const app = fakeApp('a-drop', members, rawDrop)
     app.versions = [rawDrop, v2, v3]
     app.meta = [
       { createdAt: at(8), createdBy: null, summary: null, source: 'developer' },

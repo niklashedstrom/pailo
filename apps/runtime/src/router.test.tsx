@@ -14,17 +14,24 @@ afterEach(() => window.history.replaceState(null, '', '/'))
 describe('parseRoute', () => {
   it.each([
     ['/', { kind: 'home' }],
-    ['/app/a-1', { kind: 'app', appId: 'a-1' }],
-    ['/app/a-1/', { kind: 'app', appId: 'a-1' }],
-    ['/app/a-1/veckan', { kind: 'app', appId: 'a-1', viewId: 'veckan' }],
+    ['/app/a-1', { kind: 'workshop', appId: 'a-1' }],
+    ['/app/a-1/', { kind: 'workshop', appId: 'a-1' }],
+    ['/app/a-1/veckan', { kind: 'workshop', appId: 'a-1', viewId: 'veckan' }],
+    ['/a/matschema-k3f9qa', { kind: 'app', slug: 'matschema-k3f9qa' }],
+    ['/a/matschema-k3f9qa/veckan', { kind: 'app', slug: 'matschema-k3f9qa', viewId: 'veckan' }],
     ['/app', { kind: 'home' }],
+    ['/a', { kind: 'home' }],
     ['/app/a-1/veckan/mer', { kind: 'home' }],
+    ['/a/x/veckan/mer', { kind: 'home' }],
     ['/app/<script>', { kind: 'home' }],
+    ['/a/..%2Fadmin', { kind: 'home' }],
     ['/inbjudan', { kind: 'home' }],
   ])('%s', (path, route) => expect(parseRoute(path)).toEqual(route))
 
-  it('round-trips through routePath', () => {
-    const route = { kind: 'app', appId: 'a-1', viewId: 'v-2' } as const
+  it.each([
+    { kind: 'workshop', appId: 'a-1', viewId: 'v-2' },
+    { kind: 'app', slug: 'matschema-k3f9qa', viewId: 'veckan' },
+  ] as const)('round-trips $kind through routePath', (route) => {
     expect(parseRoute(routePath(route))).toEqual(route)
   })
 })
@@ -38,7 +45,7 @@ describe('useRoute', () => {
 
   it('follows navigate and the back button', () => {
     render(<Where />)
-    act(() => navigate({ kind: 'app', appId: 'a-1' }))
+    act(() => navigate({ kind: 'workshop', appId: 'a-1' }))
     expect(screen.getByTestId('where')).toHaveTextContent('/app/a-1')
     expect(window.location.pathname).toBe('/app/a-1')
 
@@ -56,7 +63,7 @@ describe('useRoute', () => {
   it('replaces instead of adding to history when asked', () => {
     const before = window.history.length
     render(<Where />)
-    act(() => navigate({ kind: 'app', appId: 'a-1', viewId: 'v' }, { replace: true }))
+    act(() => navigate({ kind: 'workshop', appId: 'a-1', viewId: 'v' }, { replace: true }))
     expect(window.history.length).toBe(before)
     expect(screen.getByTestId('where')).toHaveTextContent('/app/a-1/v')
   })
@@ -66,7 +73,7 @@ describe('Link', () => {
   it('is a real link that navigates within the page', async () => {
     render(
       <>
-        <Link to={{ kind: 'app', appId: 'a-1' }}>Matschema</Link>
+        <Link to={{ kind: 'workshop', appId: 'a-1' }}>Matschema</Link>
         <Where />
       </>,
     )

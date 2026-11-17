@@ -1,396 +1,104 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import type { Member } from './api'
 import { fakeApi, fakeApp, memoryStorage } from './test-helpers'
-import { rawDrop } from './test-fixtures'
+import { ANNA, BERTIL, CECILIA, rawDrop, rawMealPlan } from './test-fixtures'
+import { Download } from './workshop/Download'
 
-const familjen = { id: 'h-1', name: 'Familjen', role: 'admin' as const }
-const members = {
-  'h-1': [
-    { userId: 'u-1', displayName: 'Niklas', role: 'admin' as const },
-    { userId: 'u-2', displayName: 'Mamma', role: 'member' as const },
-  ],
+const anna: Member = { userId: ANNA, displayName: 'Anna', role: 'owner' }
+const bertil: Member = { userId: BERTIL, displayName: 'Bertil', role: 'member' }
+const cecilia: Member = { userId: CECILIA, displayName: 'Cecilia', role: 'owner' }
+
+afterEach(() => window.history.replaceState(null, '', '/'))
+
+function setup(state: Parameters<typeof fakeApi>[0] = {}, path = '/') {
+  window.history.replaceState(null, '', path)
+  const result = fakeApi({
+    userId: ANNA,
+    apps: [
+      fakeApp('a-meal', [anna, bertil], rawMealPlan, 'matschema-k3f9qa'),
+      fakeApp('a-drop', [anna], rawDrop, 'drop-aaaaaa'),
+      fakeApp('a-cecilia', [cecilia, { ...anna, role: 'member' }], { ...rawDrop, name: 'Cecilias läslista' }, 'laslista-bbbbbb'),
+      fakeApp('a-other', [cecilia], { ...rawDrop, name: 'Hemlig' }, 'hemlig-cccccc'),
+    ],
+    ...state,
+  })
+  render(<App api={result.api} storage={memoryStorage()} />)
+  return result
 }
 
-describe('signing in', () => {
-  it('sends a link and tells the person to check their email', async () => {
-    const { api } = fakeApi()
-    render(<App api={api} storage={memoryStorage()} />)
+describe('signing in to Pailo', () => {
+  it('sends a link back to the page the person is on and tells them to check their email', async () => {
+    const { api } = setup({ userId: null }, '/app/a-meal')
 
-    await userEvent.type(await screen.findByLabelText('Din e-postadress'), ' mamma@example.se ')
+    expect(await screen.findByRole('heading', { name: 'Pailo' })).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('Din e-postadress'), ' mamma@example.se ')
     await userEvent.click(screen.getByRole('button', { name: 'Skicka länk' }))
 
-    expect(api.sendSignInLink).toHaveBeenCalledWith('mamma@example.se')
+    expect(api.sendSignInLink).toHaveBeenCalledWith('mamma@example.se', '/app/a-meal')
     expect(await screen.findByRole('heading', { name: 'Kolla din mejl' })).toBeInTheDocument()
-    expect(screen.getByText('mamma@example.se')).toBeInTheDocument()
   })
 
   it('says so when the link could not be sent', async () => {
-    const { api } = fakeApi()
+    const { api } = setup({ userId: null })
     api.sendSignInLink.mockRejectedValueOnce(new Error('rate limit'))
-    render(<App api={api} storage={memoryStorage()} />)
-
     await userEvent.type(await screen.findByLabelText('Din e-postadress'), 'a@example.se')
     await userEvent.click(screen.getByRole('button', { name: 'Skicka länk' }))
-
     expect(await screen.findByRole('alert')).toHaveTextContent('Det gick inte att skicka länken')
   })
 
-  it('shows the household once the person is signed in', async () => {
-    const { api, state } = fakeApi({ households: [familjen], members })
-    render(<App api={api} storage={memoryStorage()} />)
-    await screen.findByLabelText('Din e-postadress')
-
-    state.userId = 'u-1'
-    act(() => api.onUserChange.mock.calls[0][0]('u-1'))
-
-    expect(await screen.findByRole('heading', { name: 'Familjen' })).toBeInTheDocument()
+  it('asks for nothing the first time: an empty list and the field for a new app', async () => {
+    setup({ userId: 'ny-person' })
+    expect(await screen.findByRole('heading', { name: 'Mina appar' })).toBeInTheDocument()
+    expect(await screen.findByText('Du har inga appar än.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Vad vill du ha hjälp med?')).toBeInTheDocument()
+    expect(screen.queryByText(/hushåll/i)).not.toBeInTheDocument()
   })
-})
 
-describe('signing out', () => {
-  it('returns to the sign-in page', async () => {
-    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
-    render(<App api={api} storage={memoryStorage()} />)
-
+  it('returns to the sign-in page when the person signs out', async () => {
+    setup()
     await userEvent.click(await screen.findByRole('button', { name: 'Logga ut' }))
-
-    expect(api.signOut).toHaveBeenCalled()
     expect(await screen.findByLabelText('Din e-postadress')).toBeInTheDocument()
   })
 })
 
-describe('first time', () => {
-  it('asks for the household name and then shows the household', async () => {
-    const { api } = fakeApi({ userId: 'u-1' })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await userEvent.type(await screen.findByLabelText('Hushållets namn'), 'Familjen Hedström')
-    await userEvent.click(screen.getByRole('button', { name: 'Skapa hushåll' }))
-
-    expect(api.createHousehold).toHaveBeenCalledWith('Familjen Hedström')
-    expect(await screen.findByRole('heading', { name: 'Familjen Hedström' })).toBeInTheDocument()
-  })
-})
-
-/** The member list row that shows the given name. */
-function rowWith(name: string) {
-  const row = screen.getAllByRole('listitem').find((item) => within(item).queryByText(name) !== null)
-  if (row === undefined) throw new Error(`No member row with ${name}`)
-  return row
-}
-
-describe('the household', () => {
-  it('shows its name and members', async () => {
-    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    expect(await screen.findByRole('heading', { name: 'Familjen' })).toBeInTheDocument()
-    expect(await screen.findByText('Niklas')).toBeInTheDocument()
-    expect(screen.getByText('Mamma')).toBeInTheDocument()
-    expect(screen.getByText('administratör')).toBeInTheDocument()
+describe('my apps', () => {
+  it('lists my own apps first, then the ones shared with me with the owner, and nobody else\'s', async () => {
+    setup()
+    const own = within(await screen.findByRole('region', { name: 'Appar du har byggt' }))
+    expect(own.getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual([
+      '/a/drop-aaaaaa',
+      '/app/a-drop',
+      '/a/matschema-k3f9qa',
+      '/app/a-meal',
+    ])
+    const shared = within(screen.getByRole('region', { name: 'Delade med dig' }))
+    expect(shared.getByRole('link')).toHaveTextContent('Cecilias läslista från Cecilia')
+    expect(screen.queryByText('Hemlig')).not.toBeInTheDocument()
   })
 
-  it('lets a person in several households choose which one to see', async () => {
-    const other = { id: 'h-2', name: 'Sommarstugan', role: 'member' as const }
-    const { api } = fakeApi({ userId: 'u-1', households: [familjen, other], members })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await userEvent.selectOptions(await screen.findByLabelText('Visa hushåll'), 'h-2')
-
-    expect(await screen.findByRole('heading', { name: 'Sommarstugan' })).toBeInTheDocument()
-    expect(api.listMembers).toHaveBeenLastCalledWith('h-2')
-  })
-
-  it('lets a member change their own name', async () => {
-    const { api } = fakeApi({ userId: 'u-2', households: [{ ...familjen, role: 'member' }], members })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await screen.findByText('Niklas')
-    const buttons = screen.getAllByRole('button', { name: 'Ändra namn' })
-    expect(buttons).toHaveLength(1)
-    expect(screen.getByText('Mamma')).toContainElement(buttons[0])
-
-    await userEvent.click(buttons[0])
-    const input = screen.getByLabelText('Ditt namn')
-    expect(input).toHaveValue('Mamma')
-    expect(input).toHaveFocus()
-    await userEvent.clear(input)
-    await userEvent.type(input, '  Pappa ')
-    await userEvent.click(screen.getByRole('button', { name: 'Spara' }))
-
-    expect(api.updateDisplayName).toHaveBeenCalledWith('h-1', 'Pappa')
-    expect(await screen.findByText('Pappa')).toBeInTheDocument()
-    expect(screen.queryByText('Mamma')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Ditt namn')).not.toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('Namnet är sparat.')
-    expect(screen.getByRole('button', { name: 'Ändra namn' })).toHaveFocus()
-    expect(rowWith('Pappa')).toHaveTextContent('(du)')
-  })
-
-  it("marks the person's own name with (du)", async () => {
-    const { api } = fakeApi({ userId: 'u-2', households: [{ ...familjen, role: 'member' }], members })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await screen.findByText('Niklas')
-    expect(within(rowWith('Mamma')).getByText('(du)')).toBeInTheDocument()
-    expect(rowWith('Niklas')).not.toHaveTextContent('(du)')
-    expect(screen.getAllByText('(du)')).toHaveLength(1)
-  })
-
-  it('marks the signed-in person, not the admin', async () => {
-    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await screen.findByText('Niklas')
-    expect(rowWith('Niklas')).toHaveTextContent('Niklas(du)administratör')
-    expect(rowWith('Mamma')).not.toHaveTextContent('(du)')
-    expect(screen.getAllByText('(du)')).toHaveLength(1)
-  })
-
-  it('says so when the name could not be saved', async () => {
-    const { api } = fakeApi({ userId: 'u-2', households: [{ ...familjen, role: 'member' }], members })
-    api.updateDisplayName.mockRejectedValueOnce(new Error('offline'))
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Ändra namn' }))
-    const input = screen.getByLabelText('Ditt namn')
-    await userEvent.clear(input)
-    await userEvent.type(input, 'Pappa')
-    await userEvent.click(screen.getByRole('button', { name: 'Spara' }))
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('Det gick inte att spara namnet. Försök igen.')
-    expect(screen.getByText('Mamma')).toBeInTheDocument()
-    expect(screen.queryByText('Pappa')).not.toBeInTheDocument()
-
-    await userEvent.type(input, '!')
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-  })
-
-  it('does not save an empty name', async () => {
-    const { api } = fakeApi({ userId: 'u-2', households: [{ ...familjen, role: 'member' }], members })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Ändra namn' }))
-    const input = screen.getByLabelText('Ditt namn')
-    expect(input).toHaveAttribute('maxLength', '80')
-
-    await userEvent.clear(input)
-    expect(screen.getByRole('button', { name: 'Spara' })).toBeDisabled()
-    await userEvent.type(input, '   ')
-    expect(screen.getByRole('button', { name: 'Spara' })).toBeDisabled()
-    await userEvent.type(input, '{Enter}')
-    expect(api.updateDisplayName).not.toHaveBeenCalled()
-  })
-
-  it('can be cancelled', async () => {
-    const { api } = fakeApi({ userId: 'u-2', households: [{ ...familjen, role: 'member' }], members })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Ändra namn' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Avbryt' }))
-    expect(screen.getByRole('button', { name: 'Ändra namn' })).toHaveFocus()
-
-    expect(screen.queryByLabelText('Ditt namn')).not.toBeInTheDocument()
-    expect(api.updateDisplayName).not.toHaveBeenCalled()
-  })
-
-  it('lets an admin rename the household', async () => {
-    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Byt namn på hushållet' }))
-    const input = screen.getByLabelText('Hushållets namn')
-    expect(input).toHaveValue('Familjen')
-    expect(input).toHaveFocus()
-    await userEvent.clear(input)
-    await userEvent.type(input, '  Familjen Hedström ')
-    await userEvent.click(screen.getByRole('button', { name: 'Spara' }))
-
-    expect(api.renameHousehold).toHaveBeenCalledWith('h-1', 'Familjen Hedström')
-    expect(await screen.findByRole('heading', { name: 'Familjen Hedström' })).toBeInTheDocument()
-    expect(screen.queryByLabelText('Hushållets namn')).not.toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('Namnet är sparat.')
-    expect(screen.getByRole('button', { name: 'Byt namn på hushållet' })).toHaveFocus()
-  })
-
-  it('does not offer renaming to members who are not admin', async () => {
-    const { api } = fakeApi({ userId: 'u-2', households: [{ ...familjen, role: 'member' }], members })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await screen.findByText('Niklas')
-    expect(screen.queryByRole('button', { name: 'Byt namn på hushållet' })).not.toBeInTheDocument()
-  })
-
-  it('keeps showing the same household after renaming it', async () => {
-    const stugan = { id: 'h-2', name: 'Sommarstugan', role: 'admin' as const }
-    const { api } = fakeApi({ userId: 'u-1', households: [familjen, stugan], members })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await screen.findByRole('heading', { name: 'Familjen' })
-    await userEvent.click(screen.getByRole('button', { name: 'Byt namn på hushållet' }))
-    const input = screen.getByLabelText('Hushållets namn')
-    await userEvent.clear(input)
-    await userEvent.type(input, 'Vårt hem')
-    await userEvent.click(screen.getByRole('button', { name: 'Spara' }))
-
-    expect(await screen.findByRole('heading', { name: 'Vårt hem' })).toBeInTheDocument()
-    const select = screen.getByLabelText('Visa hushåll')
-    expect(select).toHaveValue('h-1')
-    expect(within(select).getAllByRole('option').map((o) => o.textContent)).toEqual(['Sommarstugan', 'Vårt hem'])
-    expect(api.listHouseholds).toHaveBeenCalledTimes(1)
-  })
-
-  it('says so when the household could not be renamed', async () => {
-    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
-    api.renameHousehold.mockRejectedValueOnce(new Error('offline'))
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Byt namn på hushållet' }))
-    const input = screen.getByLabelText('Hushållets namn')
-    await userEvent.clear(input)
-    await userEvent.type(input, 'Familjen Hedström')
-    await userEvent.click(screen.getByRole('button', { name: 'Spara' }))
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('Det gick inte att byta namn. Försök igen.')
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Familjen')
-    expect(screen.queryByRole('heading', { name: 'Familjen Hedström' })).not.toBeInTheDocument()
-  })
-
-  it('does not save an empty household name', async () => {
-    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Byt namn på hushållet' }))
-    const input = screen.getByLabelText('Hushållets namn')
-    expect(input).toHaveAttribute('maxLength', '80')
-
-    await userEvent.clear(input)
-    expect(screen.getByRole('button', { name: 'Spara' })).toBeDisabled()
-    await userEvent.type(input, '   ')
-    expect(screen.getByRole('button', { name: 'Spara' })).toBeDisabled()
-    await userEvent.type(input, '{Enter}')
-    expect(api.renameHousehold).not.toHaveBeenCalled()
-  })
-})
-
-describe('inviting', () => {
-  it('gives an admin a link that lasts 3 days and works once', async () => {
-    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
-    const writeText = vi.fn(async () => {})
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Skapa inbjudningslänk' }))
-
-    expect(api.createInviteLink).toHaveBeenCalledWith('h-1')
-    expect(await screen.findByText('Länken gäller i 3 dagar och kan användas en gång.')).toBeInTheDocument()
-    expect(screen.getByLabelText('Inbjudningslänk')).toHaveValue('http://localhost:5173/inbjudan#hemlig')
-
-    await userEvent.click(screen.getByRole('button', { name: 'Kopiera länk' }))
-    expect(writeText).toHaveBeenCalledWith('http://localhost:5173/inbjudan#hemlig')
-    expect(await screen.findByRole('button', { name: 'Kopierad' })).toBeInTheDocument()
-  })
-
-  it('is not offered to members who are not admin', async () => {
-    const { api } = fakeApi({ userId: 'u-2', households: [{ ...familjen, role: 'member' }], members })
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await screen.findByText('Niklas')
-    expect(screen.queryByRole('button', { name: 'Skapa inbjudningslänk' })).not.toBeInTheDocument()
-  })
-})
-
-describe('opening an invite link', () => {
-  it('tells a signed-out person they are invited, and joins after signing in', async () => {
-    const { api, state } = fakeApi({ members })
-    const storage = memoryStorage({ 'pailo.invite': 'hemlig' })
-    api.acceptInvite.mockImplementation(async () => {
-      state.households = [{ ...familjen, role: 'member' }]
-      return { ok: true, householdId: 'h-1' }
-    })
-    render(<App api={api} storage={storage} />)
-
-    expect(await screen.findByText(/Du har blivit inbjuden/)).toBeInTheDocument()
-
-    state.userId = 'u-2'
-    act(() => api.onUserChange.mock.calls[0][0]('u-2'))
-
-    expect(await screen.findByRole('heading', { name: 'Familjen' })).toBeInTheDocument()
-    expect(api.acceptInvite).toHaveBeenCalledWith('hemlig')
-    expect(storage.values.has('pailo.invite')).toBe(false)
-  })
-
-  it('opens the household the person just joined', async () => {
-    const other = { id: 'h-0', name: 'Annat hushåll', role: 'admin' as const }
-    const { api } = fakeApi({ userId: 'u-2', households: [other, { ...familjen, role: 'member' }], members })
-    api.acceptInvite.mockResolvedValue({ ok: true, householdId: 'h-1' })
-    render(<App api={api} storage={memoryStorage({ 'pailo.invite': 'hemlig' })} />)
-
-    expect(await screen.findByRole('heading', { name: 'Familjen' })).toBeInTheDocument()
-  })
-
-  it('explains in plain Swedish when the link no longer works', async () => {
-    const { api } = fakeApi({ userId: 'u-2' })
-    const storage = memoryStorage({ 'pailo.invite': 'gammal' })
-    render(<App api={api} storage={storage} />)
-
-    expect(await screen.findByRole('heading', { name: 'Länken fungerar inte längre' })).toBeInTheDocument()
-    expect(screen.getByText(/Be den som bjöd in dig att skicka en ny länk/)).toBeInTheDocument()
-    expect(storage.values.has('pailo.invite')).toBe(false)
-
-    await userEvent.click(screen.getByRole('button', { name: 'Fortsätt till Pailo' }))
-    await waitFor(() => expect(screen.getByLabelText('Hushållets namn')).toBeInTheDocument())
-  })
-})
-
-describe('when something goes wrong', () => {
-  it('offers to try again', async () => {
-    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
-    api.listHouseholds.mockRejectedValueOnce(new Error('offline'))
-    render(<App api={api} storage={memoryStorage()} />)
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Försök igen' }))
-
-    expect(await screen.findByRole('heading', { name: 'Familjen' })).toBeInTheDocument()
-  })
-})
-
-describe("the household's apps", () => {
-  const app = (id: string, name: string, icon?: string) => fakeApp(id, 'h-1', { ...rawDrop, name, ...(icon ? { icon } : {}) })
-
-  it('says when there are no apps, and offers no ready-made apps to add', async () => {
-    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
-    render(<App api={api} storage={memoryStorage()} />)
-    expect(await screen.findByText('Hushållet har inga appar än.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /lägg till/i })).not.toBeInTheDocument()
-    expect(screen.queryByText(/mall/i)).not.toBeInTheDocument()
-  })
-
-  it('lists the apps and opens one at its own address', async () => {
-    const { api } = fakeApi({
-      userId: 'u-1',
-      households: [familjen],
-      members,
-      apps: [app('a-1', 'Matschema', 'food'), app('a-2', 'Drop')],
-    })
-    render(<App api={api} storage={memoryStorage()} />)
-    const matschema = await screen.findByRole('link', { name: /Matschema/ })
-    expect(matschema).toHaveAttribute('href', '/app/a-1')
-    expect(matschema).toHaveTextContent('🍽️')
-    expect(screen.getByRole('link', { name: /Drop/ })).toBeInTheDocument()
-    await userEvent.click(matschema)
-    expect(await screen.findByRole('heading', { name: 'Matschema' })).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/app/a-1')
-    window.history.replaceState(null, '', '/')
+  it('opens an app on its own address, and my own apps also in the workshop', async () => {
+    setup()
+    const meal = await screen.findByRole('link', { name: 'Matschema' })
+    expect(meal).toHaveAttribute('href', '/a/matschema-k3f9qa')
+    expect(screen.getByRole('link', { name: 'Ändra Matschema' })).toHaveAttribute('href', '/app/a-meal')
+    expect(screen.getByRole('link', { name: /Cecilias läslista/ })).toHaveAttribute('href', '/a/laslista-bbbbbb')
+    expect(screen.queryByRole('link', { name: 'Ändra Cecilias läslista' })).not.toBeInTheDocument()
   })
 
   it('says so when the apps cannot be shown', async () => {
-    const { api } = fakeApi({ userId: 'u-1', households: [familjen], members })
-    api.listApps.mockRejectedValueOnce(new Error('network'))
+    const { api } = fakeApi({ userId: ANNA })
+    api.listMyApps.mockRejectedValueOnce(new Error('down'))
     render(<App api={api} storage={memoryStorage()} />)
-    expect(await screen.findByText('Det gick inte att visa apparna just nu.')).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Det gick inte att visa dina appar just nu.')
+  })
+
+  it('offers no ready-made apps to add', async () => {
+    setup({ userId: 'ny-person' })
+    await screen.findByText('Du har inga appar än.')
+    expect(screen.queryByRole('button', { name: /Lägg till/ })).not.toBeInTheDocument()
   })
 })
 
@@ -403,35 +111,29 @@ describe('building a new app with words', () => {
     inputs: [{ id: 'ny', name: 'Ny läxa', type: 'form', collection: 'laxor' }],
   }
 
-  function setup(state: Parameters<typeof fakeApi>[0] = {}) {
-    const result = fakeApi({ userId: 'u-1', households: [familjen], members, ...state })
-    render(<App api={result.api} storage={memoryStorage()} />)
-    return result
-  }
-
   async function ask(wish: string) {
     await userEvent.type(await screen.findByLabelText('Vad vill du ha hjälp med?'), wish)
     await userEvent.click(screen.getByRole('button', { name: 'Bygg en app' }))
   }
 
-  it('builds the app, opens it and tells what was built', async () => {
+  it('builds the app with me as owner, shows it in the workshop with what was built and its own address', async () => {
     const { api } = setup({ builds: [{ kind: 'ok', description: laxor, summary: 'Nu kan ni hålla koll på läxor.' }] })
-    expect(await screen.findByText('Hushållet har 20 ändringar kvar den här månaden.')).toBeInTheDocument()
+    expect(await screen.findByText('Du har 20 ändringar kvar den här månaden.')).toBeInTheDocument()
     await ask('Vi vill hålla koll på läxor')
-    expect(api.buildApp).toHaveBeenCalledWith('h-1', 'Vi vill hålla koll på läxor')
+    expect(api.buildApp).toHaveBeenCalledWith('Vi vill hålla koll på läxor')
     expect(await screen.findByRole('heading', { name: 'Läxor' })).toBeInTheDocument()
     expect(window.location.pathname).toMatch(/^\/app\/a-new-/)
     expect(screen.getByRole('status', { name: 'Ändringen' })).toHaveTextContent('Nu kan ni hålla koll på läxor.')
+    expect(screen.getByRole('link', { name: 'Öppna appen' })).toHaveAttribute('href', expect.stringMatching(/^\/a\/a-new-/))
     expect(screen.queryByRole('button', { name: 'Ångra' })).not.toBeInTheDocument()
-    window.history.replaceState(null, '', '/')
   })
 
-  it('keeps the text and explains when the month is used up', async () => {
+  it('keeps the text and explains when my month is used up', async () => {
     setup({ remaining: 0, builds: [{ kind: 'limit', reason: 'quota', retryAt: '2026-11-30T23:00:00Z' }] })
-    expect(await screen.findByText('Hushållet har inga ändringar kvar den här månaden.')).toBeInTheDocument()
+    expect(await screen.findByText('Du har inga ändringar kvar den här månaden.')).toBeInTheDocument()
     await ask('En app för läxor')
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Hushållets ändringar för den här månaden är slut. De fylls på den 1 december.',
+      'Dina ändringar för den här månaden är slut. De fylls på den 1 december.',
     )
     expect(screen.getByLabelText('Vad vill du ha hjälp med?')).toHaveValue('En app för läxor')
   })
@@ -456,11 +158,10 @@ describe('building a new app with words', () => {
       builds: [{ kind: 'not-possible', summary: 'Pailo kan inte skicka sms.', notPossible: [{ wish: 'skicka sms', nearest: 'En lista att bocka av' }] }],
     })
     await ask('skicka sms till barnen')
-    const alert = await screen.findByRole('status')
-    expect(alert).toHaveTextContent('Det här kan Pailo inte göra än:')
-    expect(alert).toHaveTextContent('skicka sms')
-    expect(alert).toHaveTextContent('Det närmaste som går: En lista att bocka av')
-    expect(alert).toHaveTextContent('Vi har sparat önskemålet.')
+    const answer = await screen.findByRole('status')
+    expect(answer).toHaveTextContent('Det här kan Pailo inte göra än:')
+    expect(answer).toHaveTextContent('Det närmaste som går: En lista att bocka av')
+    expect(answer).toHaveTextContent('Vi har sparat önskemålet.')
   })
 
   it('says so when it did not work, without technical words', async () => {
@@ -474,12 +175,139 @@ describe('building a new app with words', () => {
     const { api } = setup()
     api.buildApp.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)))
     await userEvent.type(await screen.findByLabelText('Vad vill du ha hjälp med?'), 'En app')
-    const button = screen.getByRole('button', { name: 'Bygg en app' })
-    await userEvent.dblClick(button)
+    await userEvent.dblClick(screen.getByRole('button', { name: 'Bygg en app' }))
     expect(api.buildApp).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('button', { name: 'Bygger …' })).toBeDisabled()
     expect(screen.getByLabelText('Vad vill du ha hjälp med?')).toBeDisabled()
     await act(async () => finish({ kind: 'failed' }))
     expect(screen.getByRole('button', { name: 'Bygg en app' })).toBeEnabled()
+  })
+})
+
+describe('an app in the workshop', () => {
+  it('is only for its owner: a member is sent to the app\'s own address and sees no way to change it', async () => {
+    setup({ userId: BERTIL }, '/app/a-meal')
+    await waitFor(() => expect(window.location.pathname).toBe('/a/matschema-k3f9qa'))
+    expect(await screen.findByRole('heading', { name: 'Matschema' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ändra appen' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Vad vill du ändra?')).not.toBeInTheDocument()
+  })
+
+  it('says it cannot find an app the person is not in, and shows nothing of it', async () => {
+    setup({}, '/app/a-other')
+    expect(await screen.findByRole('heading', { name: 'Appen kunde inte hittas' })).toBeInTheDocument()
+    expect(screen.queryByText('Hemlig')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Till mina appar' }))
+    expect(await screen.findByRole('heading', { name: 'Mina appar' })).toBeInTheDocument()
+  })
+})
+
+describe('sharing an app', () => {
+  async function openSharing() {
+    const result = setup({}, '/app/a-meal')
+    await userEvent.click(await screen.findByRole('button', { name: 'Dela appen' }))
+    return result
+  }
+
+  it('shows who is in the app, with the owner marked', async () => {
+    await openSharing()
+    const list = within((await screen.findByText('Bertil')).closest('ul')!)
+    expect(list.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      expect.stringMatching(/^Anna\(du\)ägare/),
+      expect.stringMatching(/^Bertil/),
+    ])
+  })
+
+  it('gives a link to the app\'s own address that lasts 3 days, works once and only gives this app', async () => {
+    const { api } = await openSharing()
+    await userEvent.click(screen.getByRole('button', { name: 'Skapa inbjudningslänk' }))
+    expect(api.createInviteLink).toHaveBeenCalledWith('a-meal', 'matschema-k3f9qa')
+    expect(await screen.findByLabelText('Inbjudningslänk')).toHaveValue(
+      'http://localhost:5173/a/matschema-k3f9qa/inbjudan#hemlig-1',
+    )
+    expect(screen.getByText(/ger tillgång till Matschema och inget annat\. Den gäller i 3 dagar och kan användas en gång\./)).toBeInTheDocument()
+  })
+
+  it('lists links not used yet and closes one', async () => {
+    const { api, state } = await openSharing()
+    await userEvent.click(screen.getByRole('button', { name: 'Skapa inbjudningslänk' }))
+    expect(await screen.findByRole('heading', { name: 'Länkar som inte har använts' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Stäng länken' }))
+    expect(api.revokeInvite).toHaveBeenCalledWith('i-1')
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Länkar som inte har använts' })).not.toBeInTheDocument())
+    expect(state.invites[0].revoked).toBe(true)
+  })
+
+  it('removes a member after asking, and keeps them when the owner changes their mind', async () => {
+    const { api, state } = await openSharing()
+    await userEvent.click(await screen.findByRole('button', { name: 'Ta bort' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Avbryt' }))
+    expect(api.removeMember).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Ta bort' }))
+    expect(screen.getByText('Ta bort Bertil från appen?')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Ja, ta bort' }))
+    expect(api.removeMember).toHaveBeenCalledWith('a-meal', BERTIL)
+    await waitFor(() => expect(screen.queryByText('Bertil')).not.toBeInTheDocument())
+    expect(state.apps[0].members).toEqual([anna])
+  })
+
+  it('offers no way to remove the owner', async () => {
+    await openSharing()
+    await screen.findByText('Bertil')
+    expect(screen.getAllByRole('button', { name: 'Ta bort' })).toHaveLength(1)
+  })
+
+  it('lets the owner change their own name in the app', async () => {
+    const { api } = await openSharing()
+    await userEvent.click(await screen.findByRole('button', { name: 'Ändra ditt namn' }))
+    const field = screen.getByLabelText('Ditt namn i appen')
+    await userEvent.clear(field)
+    await userEvent.type(field, 'Mamma')
+    await userEvent.click(screen.getByRole('button', { name: 'Spara' }))
+    expect(api.updateDisplayName).toHaveBeenCalledWith('a-meal', 'Mamma')
+    expect(await screen.findByText('Mamma')).toBeInTheDocument()
+  })
+})
+
+describe('downloading an app', () => {
+  it('explains before downloading that the file holds everyone\'s records and works without network', async () => {
+    setup({}, '/app/a-meal')
+    await userEvent.click(await screen.findByRole('button', { name: 'Ladda ned' }))
+    const panel = within(screen.getByRole('region', { name: 'Ladda ned Matschema' }))
+    expect(panel.getByText(/fungerar utan nätverk och utan Pailo/)).toBeInTheDocument()
+    expect(panel.getByText(/också det andra har skrivit/)).toBeInTheDocument()
+  })
+
+  it('puts the app, its records and members into the standalone page and saves it under the app\'s name', async () => {
+    const { api, state } = fakeApi({ userId: ANNA, apps: [fakeApp('a-meal', [anna, bertil], rawMealPlan)] })
+    state.records = [
+      { id: 'r1', appId: 'a-meal', collection: 'ratter', data: { namn: '</script>' }, createdBy: BERTIL, createdAt: 'x', updatedAt: 'x' },
+    ]
+    const save = vi.fn()
+    const template = '<html><head><title>App</title></head><body><script type="application/json" id="pailo-data"></script></body></html>'
+    render(<Download api={api} appId="a-meal" name="Matschema" fetchTemplate={async () => template} save={save} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ladda ned' }))
+
+    expect(await screen.findByText('Filen är nedladdad.')).toBeInTheDocument()
+    const [name, contents] = save.mock.calls[0] as [string, string]
+    expect(name).toBe('Matschema.html')
+    expect(contents).toContain('<title>Matschema</title>')
+    expect(contents).toContain('\\u003c/script\\u003e')
+    const data = JSON.parse(/id="pailo-data">(.*)<\/script>/.exec(contents)![1])
+    expect(data.members).toEqual([
+      { id: ANNA, displayName: 'Anna', owner: true },
+      { id: BERTIL, displayName: 'Bertil', owner: false },
+    ])
+    expect(state.exports).toEqual(['a-meal'])
+  })
+
+  it('says so when the download is refused', async () => {
+    const { api } = fakeApi({ userId: BERTIL, apps: [fakeApp('a-meal', [anna, bertil], rawMealPlan)] })
+    const save = vi.fn()
+    render(<Download api={api} appId="a-meal" name="Matschema" fetchTemplate={async () => ''} save={save} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Ladda ned' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Det gick inte att ladda ned appen just nu.')
+    expect(save).not.toHaveBeenCalled()
   })
 })
