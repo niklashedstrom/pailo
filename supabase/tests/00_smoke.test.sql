@@ -1,5 +1,5 @@
 -- Smoke test proving the pgTAP pipeline runs in CI.
--- Household isolation tests (RLS) are added in M2.
+-- Isolation between apps (RLS) is tested in 04_isolation.
 begin;
 select plan(1);
 select has_extension('pgtap', 'pgTAP is installed');

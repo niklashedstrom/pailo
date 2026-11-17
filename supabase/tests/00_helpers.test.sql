@@ -3,9 +3,10 @@
 -- "tests" stay available to the files that follow. It only ever runs
 -- against the local test database, never against the cloud project.
 --
--- Fixtures: two households, A and B, each with an admin and a member, and
--- an outsider who belongs to no household. Ids are fixed so tests can name
--- them: tests.id('a_admin'), tests.id('household_b'), ...
+-- Fixtures: app A with its owner and a member, app B with its owner and a
+-- member, app A2 that A's owner has not shared with anyone, and an
+-- outsider who is in no app. Ids are fixed so tests can name them:
+-- tests.id('a_owner'), tests.id('app_b'), ...
 
 begin;
 
@@ -18,28 +19,28 @@ language sql
 immutable
 as $$
   select case name
-    when 'a_admin'     then 'a1000000-0000-4000-8000-000000000001'
+    when 'a_owner'     then 'a1000000-0000-4000-8000-000000000001'
     when 'a_member'    then 'a1000000-0000-4000-8000-000000000002'
-    when 'b_admin'     then 'b1000000-0000-4000-8000-000000000001'
+    when 'b_owner'     then 'b1000000-0000-4000-8000-000000000001'
     when 'b_member'    then 'b1000000-0000-4000-8000-000000000002'
     when 'outsider'    then 'c1000000-0000-4000-8000-000000000001'
-    when 'household_a' then 'a2000000-0000-4000-8000-000000000001'
-    when 'household_b' then 'b2000000-0000-4000-8000-000000000001'
     when 'app_a'       then 'a3000000-0000-4000-8000-000000000001'
     when 'app_b'       then 'b3000000-0000-4000-8000-000000000001'
+    when 'app_a2'      then 'a3000000-0000-4000-8000-000000000002'
+    when 'rec_a2'      then 'a6000000-0000-4000-8000-000000000010'
     when 'invite_a'    then 'a4000000-0000-4000-8000-000000000001'
     when 'invite_b'    then 'b4000000-0000-4000-8000-000000000001'
     when 'wish_a'      then 'a5000000-0000-4000-8000-000000000001'
     when 'wish_b'      then 'b5000000-0000-4000-8000-000000000001'
-    -- records: <household>_<collection>_<creator>
-    when 'rec_a_fri_admin'   then 'a6000000-0000-4000-8000-000000000001'
-    when 'rec_a_lagg_admin'  then 'a6000000-0000-4000-8000-000000000002'
+    -- records: <app>_<collection>_<creator>
+    when 'rec_a_fri_owner'   then 'a6000000-0000-4000-8000-000000000001'
+    when 'rec_a_lagg_owner'  then 'a6000000-0000-4000-8000-000000000002'
     when 'rec_a_lagg_member' then 'a6000000-0000-4000-8000-000000000003'
-    when 'rec_a_las_admin'   then 'a6000000-0000-4000-8000-000000000004'
-    when 'rec_b_fri_admin'   then 'b6000000-0000-4000-8000-000000000001'
-    when 'rec_b_lagg_admin'  then 'b6000000-0000-4000-8000-000000000002'
+    when 'rec_a_las_owner'   then 'a6000000-0000-4000-8000-000000000004'
+    when 'rec_b_fri_owner'   then 'b6000000-0000-4000-8000-000000000001'
+    when 'rec_b_lagg_owner'  then 'b6000000-0000-4000-8000-000000000002'
     when 'rec_b_lagg_member' then 'b6000000-0000-4000-8000-000000000003'
-    when 'rec_b_las_admin'   then 'b6000000-0000-4000-8000-000000000004'
+    when 'rec_b_las_owner'   then 'b6000000-0000-4000-8000-000000000004'
   end::uuid;
 $$;
 
@@ -121,37 +122,42 @@ as $$
   );
 $$;
 
--- Creates users, households and memberships only.
-create or replace function tests.seed_households()
+-- Creates the people only, in no app.
+create or replace function tests.seed_people()
 returns void
 language plpgsql
 as $$
 declare
   person text;
 begin
-  foreach person in array array['a_admin', 'a_member', 'b_admin', 'b_member', 'outsider'] loop
+  foreach person in array array['a_owner', 'a_member', 'b_owner', 'b_member', 'outsider'] loop
     insert into auth.users (id, instance_id, aud, role, email, email_confirmed_at,
                             raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
     values (tests.id(person), '00000000-0000-0000-0000-000000000000', 'authenticated',
             'authenticated', person || '@test.pailo.se', now(),
             '{"provider":"email","providers":["email"]}', '{}', now(), now());
   end loop;
-
-  insert into public.households (id, name) values
-    (tests.id('household_a'), 'Hushåll A'),
-    (tests.id('household_b'), 'Hushåll B');
-
-  insert into public.members (household_id, user_id, role, display_name) values
-    (tests.id('household_a'), tests.id('a_admin'), 'admin', 'A admin'),
-    (tests.id('household_a'), tests.id('a_member'), 'member', 'A medlem'),
-    (tests.id('household_b'), tests.id('b_admin'), 'admin', 'B admin'),
-    (tests.id('household_b'), tests.id('b_member'), 'member', 'B medlem');
 end;
 $$;
 
--- Everything: households plus, per household, one app with one version,
--- a record per collection (and one by the member in "lagg"), an open
--- invite whose secret is 'token-a' / 'token-b', and a wish.
+-- An app with one version and its owner, as the build service makes it.
+create or replace function tests.seed_app(app text, app_name text, owner text)
+returns void
+language plpgsql
+as $$
+begin
+  insert into public.apps (id, name, created_by) values (tests.id(app), app_name, tests.id(owner));
+  insert into public.app_members (app_id, user_id, role, display_name)
+  values (tests.id(app), tests.id(owner), 'owner', app_name || ' ägare');
+  insert into public.app_versions (app_id, description, created_by)
+  values (tests.id(app), tests.app_description(app_name), tests.id(owner));
+end;
+$$;
+
+-- Everything: people plus, per side A and B, an app with its owner and a
+-- member, a record per collection (and one by the member in "lagg"), an
+-- open invite whose secret is 'token-a' / 'token-b', and a wish by the
+-- member. A's owner also has app A2 with one record, shared with nobody.
 create or replace function tests.seed()
 returns void
 language plpgsql
@@ -159,28 +165,29 @@ as $$
 declare
   h text;
 begin
-  perform tests.seed_households();
+  perform tests.seed_people();
   foreach h in array array['a', 'b'] loop
-    insert into public.apps (id, household_id, name, created_by)
-    values (tests.id('app_' || h), tests.id('household_' || h), 'App ' || upper(h), tests.id(h || '_admin'));
-
-    insert into public.app_versions (app_id, description, created_by)
-    values (tests.id('app_' || h), tests.app_description('App ' || upper(h)), tests.id(h || '_admin'));
+    perform tests.seed_app('app_' || h, 'App ' || upper(h), h || '_owner');
+    insert into public.app_members (app_id, user_id, role, display_name)
+    values (tests.id('app_' || h), tests.id(h || '_member'), 'member', 'App ' || upper(h) || ' medlem');
 
     insert into public.records (id, app_id, collection, data, created_by) values
-      (tests.id('rec_' || h || '_fri_admin'),   tests.id('app_' || h), 'fri',  '{"text":"fri"}',  tests.id(h || '_admin')),
-      (tests.id('rec_' || h || '_lagg_admin'),  tests.id('app_' || h), 'lagg', '{"text":"lagg"}', tests.id(h || '_admin')),
+      (tests.id('rec_' || h || '_fri_owner'),   tests.id('app_' || h), 'fri',  '{"text":"fri"}',  tests.id(h || '_owner')),
+      (tests.id('rec_' || h || '_lagg_owner'),  tests.id('app_' || h), 'lagg', '{"text":"lagg"}', tests.id(h || '_owner')),
       (tests.id('rec_' || h || '_lagg_member'), tests.id('app_' || h), 'lagg', '{"text":"egen"}', tests.id(h || '_member')),
-      (tests.id('rec_' || h || '_las_admin'),   tests.id('app_' || h), 'las',  '{"text":"las"}',  tests.id(h || '_admin'));
+      (tests.id('rec_' || h || '_las_owner'),   tests.id('app_' || h), 'las',  '{"text":"las"}',  tests.id(h || '_owner'));
 
-    insert into public.invites (id, household_id, token_hash, created_by, expires_at)
-    values (tests.id('invite_' || h), tests.id('household_' || h),
-            extensions.digest('token-' || h, 'sha256'), tests.id(h || '_admin'), now() + interval '3 days');
+    insert into public.invites (id, app_id, token_hash, created_by, expires_at)
+    values (tests.id('invite_' || h), tests.id('app_' || h),
+            extensions.digest('token-' || h, 'sha256'), tests.id(h || '_owner'), now() + interval '3 days');
 
-    insert into public.wishes (id, household_id, app_id, text, created_by)
-    values (tests.id('wish_' || h), tests.id('household_' || h), tests.id('app_' || h),
-            'Önskemål ' || upper(h), tests.id(h || '_member'));
+    insert into public.wishes (id, app_id, text, created_by)
+    values (tests.id('wish_' || h), tests.id('app_' || h), 'Önskemål ' || upper(h), tests.id(h || '_member'));
   end loop;
+
+  perform tests.seed_app('app_a2', 'App A2', 'a_owner');
+  insert into public.records (id, app_id, collection, data, created_by)
+  values (tests.id('rec_a2'), tests.id('app_a2'), 'fri', '{"text":"bara ägaren"}', tests.id('a_owner'));
 end;
 $$;
 
@@ -198,24 +205,22 @@ begin
 end;
 $$;
 
--- One checksum per table over a household's rows. Call as postgres.
-create or replace function tests.household_fingerprint(target uuid)
+-- One checksum per table over an app's rows. Call as postgres.
+create or replace function tests.app_fingerprint(target uuid)
 returns table (tbl text, checksum text)
 language sql
 as $$
-  select 'households', md5(coalesce(string_agg(t::text, '|' order by t.id), '')) from public.households t where t.id = target
+  select 'apps', md5(coalesce(string_agg(t::text, '|' order by t.id), '')) from public.apps t where t.id = target
   union all
-  select 'members', md5(coalesce(string_agg(t::text, '|' order by t.user_id), '')) from public.members t where t.household_id = target
+  select 'app_members', md5(coalesce(string_agg(t::text, '|' order by t.user_id), '')) from public.app_members t where t.app_id = target
   union all
-  select 'invites', md5(coalesce(string_agg(t::text, '|' order by t.id), '')) from public.invites t where t.household_id = target
+  select 'invites', md5(coalesce(string_agg(t::text, '|' order by t.id), '')) from public.invites t where t.app_id = target
   union all
-  select 'apps', md5(coalesce(string_agg(t::text, '|' order by t.id), '')) from public.apps t where t.household_id = target
+  select 'app_versions', md5(coalesce(string_agg(t::text, '|' order by t.id), '')) from public.app_versions t where t.app_id = target
   union all
-  select 'app_versions', md5(coalesce(string_agg(t::text, '|' order by t.id), '')) from public.app_versions t where t.household_id = target
+  select 'records', md5(coalesce(string_agg(t::text, '|' order by t.id), '')) from public.records t where t.app_id = target
   union all
-  select 'records', md5(coalesce(string_agg(t::text, '|' order by t.id), '')) from public.records t where t.household_id = target
-  union all
-  select 'wishes', md5(coalesce(string_agg(t::text, '|' order by t.id), '')) from public.wishes t where t.household_id = target;
+  select 'wishes', md5(coalesce(string_agg(t::text, '|' order by t.id), '')) from public.wishes t where t.app_id = target;
 $$;
 
 grant execute on all functions in schema tests to anon, authenticated, service_role;
