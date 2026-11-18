@@ -10,7 +10,7 @@ Beskriver hur databasändringar testas och rullas ut, så att molnprojektet allt
 Varje pull request SHALL köra alla databasmigreringar från tom databas och alla databastester. En pull request där en migrering eller ett test misslyckas MUST inte kunna slås samman.
 
 #### Scenario: Trasig policy
-- **WHEN** en pull request innehåller en ändring som låter hushåll B läsa A:s poster
+- **WHEN** en pull request innehåller en ändring som låter en person läsa poster i en app där hen inte är medlem
 - **THEN** databastesterna misslyckas och CI är röd
 
 ### Requirement: Utrullning efter sammanslagning

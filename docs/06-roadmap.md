@@ -80,14 +80,18 @@ Runtime känner bara till byggstenarna och visar vilken giltig beskrivning som h
 
 **Beslut 17 november 2026:** hushållet tas bort som enhet. Var och en loggar in som sig själv, och en app delas med dem som ska använda den. Varje app står på egna ben och kan köras utan Pailo.
 
-- [ ] Datamodell: `app_members` (ägare och medlemmar) ersätter `households` och `members`, och en inbjudan gäller en app
-- [ ] RLS per appmedlemskap på varje tabell, med pgTAP-tester som bevisar att person A inte når B:s appar
-- [ ] Kvot, hastighetsgränser och kostnadslogg per person i stället för per hushåll
-- [ ] Varje app på egen adress med eget namn, ikon, tema och installerbart PWA-manifest, utan Pailo-meny, och inloggning i appens egen stil
-- [ ] Pailo som verkstad: mina appar, skapa, ändra, versioner och bjuda in
-- [ ] Export: ladda ned appen som fristående paket (runtime, beskrivning och poster) som fungerar offline utan server
+- [x] Datamodell: `app_members` (ägare och medlemmar) ersätter `households` och `members`, och en inbjudan gäller en app
+- [x] RLS per appmedlemskap på varje tabell, med pgTAP-tester som bevisar att person A inte når B:s appar
+- [x] Kvot, hastighetsgränser och kostnadslogg per person i stället för per hushåll
+- [x] Varje app på egen adress med eget namn, ikon, tema och installerbart PWA-manifest, utan Pailo-meny, och inloggning i appens egen stil
+- [x] Pailo som verkstad: mina appar, skapa, ändra, versioner och bjuda in
+- [x] Export: ladda ned appen som fristående paket (runtime, beskrivning och poster) som fungerar offline utan server
 
 **Klart när:** två personer med egna konton delar matschemat på dess egen adress utan att se Pailo, en tredje person når det inte (bevisat av tester), och det nedladdade paketet fungerar utan nätverk.
+
+**Klart 18 november 2026:** rullat ut i molnet. Ägaren byggde ett matschema på pailo.se, delade det med en andra person på appens egen adress och bekräftade att det fungerar. Isoleringen bevisas av pgTAP-testerna med tre konton (ägare, medlem, utomstående) och av runtime-API:t mot den lokala stacken. Ändringen är arkiverad i `openspec/changes/archive/2026-11-18-m2b-personal-accounts-standalone-apps`.
+
+**Nästa iteration (ägarens återkoppling):** byggandet ska leda användaren med frågor om idén och val av stil (M5), och appen ska kännas mer som en egen app: ett helskärmsskal med egen rubrikrad och flikar längst ned på telefonen, och en ny app ska öppnas direkt i sig själv i stället för i verkstaden.
 
 ### M5 · Intervju och design (vecka 7–8)
 

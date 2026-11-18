@@ -2,31 +2,9 @@
 
 ## Purpose
 
-Beskriver hur Pailos enda runtime visar och låter hushållet använda en app utifrån appens aktuella beskrivning: applistan, vyerna, formulären, temat och vad varje person får göra, utan någon kod per app.
+Beskriver hur Pailos enda runtime visar och låter appens medlemmar använda en app, i verkstaden och på appens egen adress, utifrån appens aktuella beskrivning: applistan, vyerna, formulären, temat och vad varje person får göra, utan någon kod per app.
 
 ## Requirements
-
-### Requirement: Hushållets appar
-Hushållssidan SHALL lista hushållets appar med namn och ikon. Varje app SHALL kunna öppnas på en egen adress som går att ladda om och dela inom hushållet. Finns inga appar SHALL sidan säga det i vardagliga ord.
-
-#### Scenario: Öppna en app
-- **WHEN** en medlem trycker på Matschema i applistan
-- **THEN** appen öppnas med sin första vy och adressen pekar på appen och vyn
-
-#### Scenario: Ladda om
-- **WHEN** en medlem laddar om sidan medan en app är öppen
-- **THEN** samma app och vy visas igen
-
-#### Scenario: Inga appar
-- **WHEN** en medlem öppnar ett hushåll utan appar
-- **THEN** sidan säger att det inte finns några appar än
-
-### Requirement: App som personen inte når
-Öppnas adressen till en app som inte finns eller hör till ett hushåll personen inte är medlem i, SHALL runtime visa att appen inte kunde hittas och erbjuda vägen tillbaka till hushållet. Runtime MUST inte visa något om appen.
-
-#### Scenario: Annat hushålls app
-- **WHEN** en medlem i hushåll A öppnar adressen till en app i hushåll B
-- **THEN** sidan säger att appen inte kunde hittas och visar inget av appens innehåll
 
 ### Requirement: Rendering bara från beskrivningen
 Runtime SHALL visa varje app enbart utifrån appens senaste version i databasen. Ingen app MUST ha egen kod, egna adresser utöver app och vy, eller egna tabeller. En beskrivning som inte validerar mot schemat MUST inte visas; i stället SHALL sidan säga att appen inte kan visas just nu.
@@ -51,10 +29,10 @@ Runtime SHALL kunna visa och använda varje giltig beskrivning, med varje fältt
 - **THEN** appen visas och fungerar som vilken annan app som helst
 
 ### Requirement: Inga färdiga appar i produkten
-Pailo MUST inte erbjuda inbyggda eller färdiga appar att välja bland. Från M4 SHALL medlemmar kunna skapa appar genom att beskriva dem med egna ord, och appen SHALL byggas av byggtjänsten från byggstenarna. Utvecklare kan fortfarande lägga in beskrivningar lokalt för att prova runtime.
+Pailo MUST inte erbjuda inbyggda eller färdiga appar att välja bland. Personer SHALL skapa appar genom att beskriva dem med egna ord, och appen SHALL byggas av byggtjänsten från byggstenarna. Utvecklare kan fortfarande lägga in beskrivningar lokalt för att prova runtime.
 
 #### Scenario: Tom applista
-- **WHEN** en administratör öppnar ett hushåll utan appar
+- **WHEN** en person utan appar öppnar verkstaden
 - **THEN** sidan visar inga färdiga appar att lägga till, men ett fält för att beskriva en ny app med egna ord
 
 ### Requirement: Byta vy
@@ -122,7 +100,7 @@ Varje `form`-inmatning SHALL visas som en knapp med inmatningens namn i appen. K
 - **THEN** måltiden sparas och syns på rätt dag i vyn Veckan
 
 ### Requirement: Formulär efter fälttyp
-Formuläret SHALL ha en kontroll per fält som passar fälttypen: textfält (flerradigt om fältet är det), datum med eller utan tid, länk, val (ett eller flera), person (hushållets medlemmar och beskrivningens personer utan konto) och koppling (posterna i den kopplade samlingen). Obligatoriska fält SHALL vara markerade, och formuläret MUST inte sparas förrän de är ifyllda.
+Formuläret SHALL ha en kontroll per fält som passar fälttypen: textfält (flerradigt om fältet är det), datum med eller utan tid, länk, val (ett eller flera), person (appens medlemmar och beskrivningens personer utan konto) och koppling (posterna i den kopplade samlingen). Obligatoriska fält SHALL vara markerade, och formuläret MUST inte sparas förrän de är ifyllda.
 
 #### Scenario: Obligatoriskt fält
 - **WHEN** en medlem försöker spara en ny rätt utan namn
@@ -130,7 +108,7 @@ Formuläret SHALL ha en kontroll per fält som passar fälttypen: textfält (fle
 
 #### Scenario: Personval
 - **WHEN** en medlem öppnar fältet Vem lagar
-- **THEN** hushållets medlemmar och Ella och Leo går att välja
+- **THEN** appens medlemmar och Ella och Leo går att välja
 
 ### Requirement: Bilder kommer senare
 Ett fält av typen `image` SHALL visas i formuläret med en text om att bilder inte går att lägga till än. Formuläret MUST ändå gå att spara.
@@ -151,10 +129,10 @@ En medlem SHALL kunna öppna en post, ändra dess fält och spara, eller ta bort
 - **THEN** posten finns kvar
 
 ### Requirement: Knappar efter behörighet
-Runtime SHALL bara visa skapa, ändra och ta bort när personen får göra det enligt samlingens åtkomst och sin roll: `edit` ger allt, `add` ger skapa och ändra egna poster, `read` ger inget av det. Administratörer SHALL se allt. Nekar databasen ändå en ändring SHALL runtime säga det i vardagliga ord och behålla det personen skrev.
+Runtime SHALL bara visa skapa, ändra och ta bort när personen får göra det enligt samlingens åtkomst och sin roll i appen: `edit` ger allt, `add` ger skapa och ändra egna poster, `read` ger inget av det. Appens ägare SHALL se allt. Nekar databasen ändå en ändring SHALL runtime säga det i vardagliga ord och behålla det personen skrev.
 
 #### Scenario: Läsbehörighet
-- **WHEN** en medlem som inte är administratör öppnar en samling med åtkomsten `read`
+- **WHEN** en medlem som inte är ägare öppnar en samling med åtkomsten `read`
 - **THEN** knappar för att skapa, ändra och ta bort visas inte
 
 #### Scenario: Annans post vid add
@@ -167,13 +145,6 @@ Om en post inte går att spara, ändra eller ta bort SHALL runtime visa ett kort
 #### Scenario: Nätet borta
 - **WHEN** sparandet misslyckas
 - **THEN** formuläret står kvar med det personen skrev och ett fel som säger att det inte gick att spara
-
-### Requirement: Delat mellan hushållets medlemmar
-Två medlemmar i samma hushåll SHALL se samma poster i en app. När en medlem kommer tillbaka till Pailo efter att ha varit i en annan flik eller app SHALL appens poster hämtas på nytt.
-
-#### Scenario: Två konton
-- **WHEN** Anna planerar en måltid och Bertil, i samma hushåll, sedan går tillbaka till Pailo
-- **THEN** Bertil ser måltiden i vyn Veckan
 
 ### Requirement: Tema från beskrivningen
 Runtime SHALL ge varje app det utseende som beskrivningens tema anger: förinställningen `calm`, `playful` eller `strict` ger standardvärden, och palett, typsnitt, avstånd, rundning och täthet ersätter dem när de anges. Temat MUST bara påverka den öppna appen, inte Pailos egna sidor.
@@ -194,44 +165,88 @@ Varje palett MUST ge text och knappar en kontrast som når WCAG AA (4,5:1 för b
 - **THEN** alla par av text och bakgrund når WCAG AA
 
 ### Requirement: Klart-kriteriet för M3
-De handskrivna beskrivningarna av Drop och matschemat SHALL, när de lagts in som appar i ett hushåll, gå att använda i runtime och delas mellan två konton i samma hushåll, med alla sina vyer och formulär.
+De handskrivna beskrivningarna av Drop och matschemat SHALL, när de lagts in som appar, gå att använda i runtime och delas mellan två konton som är medlemmar i appen, med alla sina vyer och formulär.
 
 #### Scenario: Matschemat mellan två konton
-- **WHEN** matschemats beskrivning finns som app i Annas och Bertils hushåll, Anna lägger in rätten Lasagne och planerar den till onsdag, och Bertil sedan öppnar appen
+- **WHEN** matschemats beskrivning finns som Annas app, Bertil är medlem, Anna lägger in rätten Lasagne och planerar den till onsdag, och Bertil sedan öppnar appen
 - **THEN** Bertil ser Lasagne på onsdag i vyn Veckan och kan ändra måltiden
 
 ### Requirement: Beskriva en ny app
-Hushållssidan SHALL ha ett fält där en medlem beskriver vad hen vill ha hjälp med. När byggtjänsten har skapat appen SHALL den öppnas, och sammanfattningen av vad som byggdes SHALL visas.
+Verkstaden SHALL ha ett fält där en person beskriver vad hen vill ha hjälp med. När byggtjänsten har skapat appen SHALL den visas i verkstaden med sammanfattningen av vad som byggdes, och personen är appens ägare.
 
 #### Scenario: Ny app
-- **WHEN** en medlem skriver vad hen vill ha hjälp med och skickar
-- **THEN** medlemmen ser att appen byggs, och sedan öppnas den nya appen med en sammanfattning
+- **WHEN** en person skriver vad hen vill ha hjälp med och skickar
+- **THEN** personen ser att appen byggs, och sedan visas den nya appen med en sammanfattning och en länk till appens egen adress
 
 ### Requirement: Ändra appen med ord
-En öppen app SHALL ha ett fält "Vad vill du ändra?". När ändringen är sparad SHALL appen visas enligt den nya versionen, med sammanfattningen och en knapp för att ångra.
+En egen app som är öppen i verkstaden SHALL ha ett fält "Vad vill du ändra?". När ändringen är sparad SHALL appen visas enligt den nya versionen, med sammanfattningen och en knapp för att ångra. Fältet MUST inte visas för medlemmar som inte är ägare och MUST inte finnas på appens egen adress.
 
 #### Scenario: Ändra och se resultatet
-- **WHEN** en medlem skriver en ändring i appen och skickar
+- **WHEN** ägaren skriver en ändring i verkstaden och skickar
 - **THEN** appen visas enligt den nya versionen med sammanfattningen och en ångra-knapp
 
 #### Scenario: Ångra från beskedet
-- **WHEN** medlemmen trycker på ångra efter en ändring
+- **WHEN** ägaren trycker på ångra efter en ändring
 - **THEN** appen visas som före ändringen
+
+#### Scenario: Medlem ser inget byggfält
+- **WHEN** en medlem som inte är ägare öppnar matschemat
+- **THEN** finns inget fält för att ändra appen
 
 ### Requirement: Väntan och besked
 Medan byggtjänsten arbetar SHALL runtime visa att något händer och hindra att samma önskemål skickas två gånger. Besked om gränser, kvot, paus, önskemål som inte går och fel SHALL visas i vardagliga ord vid fältet, och det personen skrev SHALL finnas kvar.
 
 #### Scenario: Kvoten slut
-- **WHEN** en medlem skickar en ändring och hushållets kvot är slut
+- **WHEN** ägaren skickar en ändring och hens kvot för månaden är slut
 - **THEN** beskedet visas vid fältet och texten personen skrev finns kvar
 
 #### Scenario: Dubbeltryck
-- **WHEN** en medlem trycker två gånger snabbt på skicka
+- **WHEN** ägaren trycker två gånger snabbt på skicka
 - **THEN** bara ett önskemål skickas
 
 ### Requirement: Versionslista
-En öppen app SHALL kunna visa sina versioner, senaste först, med tid, vem som gjorde ändringen och sammanfattningen. En medlem SHALL kunna välja "Gå tillbaka hit" på en tidigare version och då se appen enligt den.
+En egen app i verkstaden SHALL kunna visa sina versioner, senaste först, med tid, vem som gjorde ändringen och sammanfattningen. Ägaren SHALL kunna välja "Gå tillbaka hit" på en tidigare version och då se appen enligt den.
 
 #### Scenario: Gå tillbaka
-- **WHEN** en medlem väljer "Gå tillbaka hit" på en äldre version
+- **WHEN** ägaren väljer "Gå tillbaka hit" på en äldre version
 - **THEN** appen visas enligt den versionen och versionslistan har en ny version överst
+
+### Requirement: App utan tillgång
+Öppnas en app som inte finns eller där personen inte är medlem SHALL runtime visa att appen inte kunde hittas eller att personen inte har tillgång, enligt `standalone-app`. Runtime MUST inte visa något om appens innehåll eller medlemmar.
+
+#### Scenario: Någon annans app
+- **WHEN** en inloggad person öppnar adressen till en app där hen inte är medlem
+- **THEN** sidan säger att personen inte har tillgång och visar inget av appens innehåll
+
+### Requirement: Mina appar
+Verkstaden SHALL lista personens appar med namn och ikon: först de personen äger, sedan de hen är medlem i med ägarens namn. Varje app SHALL kunna öppnas på sin egen adress, och för egna appar SHALL verkstaden kunna öppna appen för att ändra den. Finns inga appar SHALL sidan säga det i vardagliga ord.
+
+#### Scenario: Öppna en app
+- **WHEN** en person trycker på Matschema i sin applista
+- **THEN** matschemat öppnas på sin egen adress med sin första vy
+
+#### Scenario: Delad app
+- **WHEN** Bertil har bjudits in till Annas matschema och öppnar verkstaden
+- **THEN** matschemat finns i hans lista under appar han är med i, med Annas namn
+
+#### Scenario: Inga appar
+- **WHEN** en person utan appar öppnar verkstaden
+- **THEN** sidan säger att det inte finns några appar än
+
+### Requirement: Medlemmar i appen
+Ägaren SHALL i verkstaden kunna se appens medlemmar, bjuda in, se och återkalla oanvända inbjudningar och ta bort en medlem. En medlem SHALL kunna ändra sitt namn i appen och lämna appen från appens adress.
+
+#### Scenario: Ägaren ser medlemmarna
+- **WHEN** ägaren öppnar medlemmarna för matschemat
+- **THEN** medlemmarnas namn visas tillsammans med knappar för att bjuda in och ta bort
+
+#### Scenario: Lämna appen
+- **WHEN** en medlem väljer att lämna matschemat och bekräftar
+- **THEN** matschemat försvinner från personens appar och adressen säger att personen inte har tillgång
+
+### Requirement: Delat mellan appens medlemmar
+Två medlemmar i samma app SHALL se samma poster. När en medlem kommer tillbaka till appen efter att ha varit i en annan flik eller app SHALL appens poster hämtas på nytt.
+
+#### Scenario: Två konton
+- **WHEN** Anna planerar en måltid i matschemat och Bertil, som är medlem i matschemat, sedan går tillbaka till appen
+- **THEN** Bertil ser måltiden i vyn Veckan
