@@ -49,19 +49,19 @@
 ## 8. Installera appen
 
 - [x] 8.1 Vektorikoner från Lucide för de 18 ikonnamnen (från paketet `lucide-static`, med licenstexten bredvid ikonerna), och ett `prebuild`-skript med `@resvg/resvg-js` som ritar 192 och 512 pixlar per ikon och palett till `apps/runtime/public/icons/` (ignoreras av git). Verifiera med ett test att alla 216 filer skapas och att varje ikonnamn i schemat har en vektor.
-- [ ] 8.2 Omskrivningen `/a/:slug/manifest.webmanifest` i `vercel.json` och länkarna till manifest och `apple-touch-icon` på `/a/`-sidor. Verifiera i förhandsvisningen från Vercel att manifestet laddas från appens adress och att Chrome visar att appen går att installera.
+- [x] 8.2 Omskrivningen `/a/:slug/manifest.webmanifest` i `vercel.json` och länkarna till manifest och `apple-touch-icon` på `/a/`-sidor. Verifiera i förhandsvisningen från Vercel att manifestet laddas från appens adress och att Chrome visar att appen går att installera.
 
 ## 9. Den fristående filen
 
 - [x] 9.1 Ingången `standalone.html` med `vite-plugin-singlefile`, den lokala `AppData` med `localStorage` och meta-taggen för CSP enligt design beslut 10. Verifiera med ett test att den byggda filen är en enda HTML-fil utan `supabase`, `pailo.se` eller funktionsadresser.
 - [x] 9.2 Ett test som öppnar en fristående fil med Drop och matschemat i jsdom (eller Playwright om det redan finns), skapar, ändrar och tar bort en post, laddar om och ser ändringen. Verifiera att testet är grönt.
-- [ ] 9.3 Manuell kontroll: ladda ned matschemat, stäng av nätverket, öppna filen, lägg till en måltid, stäng och öppna igen. Skriv resultatet i PR:en.
+- [x] 9.3 Manuell kontroll: ladda ned matschemat, stäng av nätverket, öppna filen, lägg till en måltid, stäng och öppna igen. Skriv resultatet i PR:en.
 
 ## 10. Dokument, utrullning och klart-kontroll
 
 - [x] 10.1 Uppdatera `docs/03-arkitektur.md` (ta bort notisen om hushåll i koden, lägg till adresser, manifest och export), `docs/05-sakerhet.md` (`app_face` och exportloggen), README:s lokala steg, `CLAUDE.md` (ta bort "until then the code still has them") och `openspec/config.yaml` (RLS per appmedlemskap, kvot per person). Verifiera att `grep -ri hushåll docs README.md` bara träffar historik och affärsmodellens namn.
-- [ ] 10.2 Före sammanslagningen och med ägarens ja: lägg till `https://pailo.se/a/**` bland de tillåtna adresserna i Supabase Auth i molnet och be ägaren ta en kopia av datan. Verifiera att adressen syns i Auth-inställningarna.
-- [ ] 10.3 Efter att ägaren slagit ihop PR:en, klart-kontrollen enligt design, Migration Plan, steg 4:
+- [x] 10.2 Före sammanslagningen och med ägarens ja: lägg till `https://pailo.se/a/**` bland de tillåtna adresserna i Supabase Auth i molnet och be ägaren ta en kopia av datan. Verifiera att adressen syns i Auth-inställningarna.
+- [x] 10.3 Efter att ägaren slagit ihop PR:en, klart-kontrollen enligt design, Migration Plan, steg 4:
   - ägarens testappar finns med kortnamn;
   - en andra person bjuds in och ser ägarens måltider på matschemats adress utan Pailo;
   - en tredje person nekas;

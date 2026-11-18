@@ -74,7 +74,7 @@ header { display: grid; gap: 0.75rem; }
 /* Milestone rail */
 .rail {
   list-style: none; margin: 0.5rem 0 0; padding: 0;
-  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.5rem;
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.5rem;
 }
 .rail li { display: grid; gap: 0.35rem; min-width: 0; }
 .rail .bar { height: 8px; border-radius: 4px; background: var(--line); }
@@ -157,7 +157,7 @@ td .why { display: block; color: var(--muted); font-size: 0.88rem; margin-top: 0
 .linklist { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; padding: 0; margin: 0; list-style: none; }
 
 @media (max-width: 34rem) {
-  .rail { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 0.9rem; }
+  .rail { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 0.9rem; }
   .ms .body { padding-left: 1rem; }
   details.ms summary { grid-template-columns: 2.5rem minmax(0, 1fr); }
   details.ms summary .pill { grid-column: 2; justify-self: start; }
@@ -173,8 +173,8 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
 <header>
   <p class="eyebrow">Pailo · fas 1 · Kärnan</p>
   <h1>Läget just nu</h1>
-  <p class="lede">Fyra av sex milstolpar är klara och finns på <a href="https://pailo.se">pailo.se</a>. Nu kan ett hushåll beskriva en app eller en ändring med egna ord, och byggtjänsten gör om det till en giltig ny version som går att ångra. 20 av 20 testproblem gav en användbar app, till cirka 0,03 US$ per byggsamtal. Byggandet i molnet är pausat tills du slår på det. Nästa milstolpe är M5: intervjun och designen.</p>
-  <p class="updated">Uppdaterad 17 november 2026 · fem av sex milstolpar klara · tre fabriksjobb klara</p>
+  <p class="lede">Sex av sju milstolpar är klara och finns på <a href="https://pailo.se">pailo.se</a>. Var och en loggar in som sig själv, beskriver en app med egna ord och delar den med dem som ska använda den. Varje app har en egen adress utan Pailo, kan läggas på hemskärmen och kan laddas ned som en fil som fungerar utan nätverk. Byggandet är på i molnet, till cirka 0,03 US$ per byggsamtal. Nästa milstolpe är M5: en intervju som leder fram till appen, val av stil, och appar som känns som egna appar.</p>
+  <p class="updated">Uppdaterad 18 november 2026 · sex av sju milstolpar klara · tre fabriksjobb klara</p>
 
   <ol class="rail" aria-label="Milstolpar i fas 1">
     <li class="done"><div class="bar"></div><span class="code">M0</span><span class="name">Grunden</span></li>
@@ -182,6 +182,7 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
     <li class="done"><div class="bar"></div><span class="code">M2</span><span class="name">Data och behörighet</span></li>
     <li class="done"><div class="bar"></div><span class="code">M3</span><span class="name">Runtime</span></li>
     <li class="done"><div class="bar"></div><span class="code">M4</span><span class="name">Byggtjänsten</span></li>
+    <li class="done"><div class="bar"></div><span class="code">M2b</span><span class="name">Egna konton och appar</span></li>
     <li class="next"><div class="bar"></div><span class="code">M5</span><span class="name">Intervju och design</span></li>
   </ol>
 </header>
@@ -192,15 +193,14 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
     <div>
       <p class="eyebrow">Väntar på dig</p>
       <ul>
-        <li>Välj egen e-posttjänst, se öppna beslut nedan</li>
-        <li>Bestäm var AI-anropen får behandlas: arbetsytan Pailo står på USA/global</li>
-        <li>Välj modell för produktion; Opus 5.5 är förvalt och uppmätt</li>
+        <li>Läs och godkänn förslaget till M5 när det är klart</li>
+        <li>Förnya Brevo-nyckeln för inloggningsmejlen innan den går ut</li>
       </ul>
     </div>
     <div>
       <p class="eyebrow">Nästa steg</p>
       <ul>
-        <li>Föreslå M5 med <code>/opsx:propose</code></li>
+        <li>Föreslå M5 med <code>/opsx:propose</code>: intervju, stilval och appar som känns som egna appar</li>
         <li>Säg i systemprompten att bilder inte går än, och byt testproblem 15</li>
         <li>Fabrikens kö med <code>/factory next</code> när det finns tid över</li>
       </ul>
@@ -297,7 +297,7 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
           <li class="x">Claude svarar med strukturerad output: en sammanfattning och en JSON Patch mot beskrivningen</li>
           <li class="x">Varje ändring valideras och sparas som ny version; ett nytt försök med felen om svaret inte håller</li>
           <li class="x">Ny app med egna ord, ångra och "Gå tillbaka hit" i versionslistan, utan AI och utan kvot</li>
-          <li class="x">Nödbroms (på från början), dygnstak, 10/30 i timmen, 20 per hushåll och månad, kostnadslogg</li>
+          <li class="x">Nödbroms (på från början), dygnstak, 10/30 i timmen, 20 byggsamtal i månaden, kostnadslogg</li>
           <li class="x">Det som inte går får ett ärligt besked och sparas som önskemål</li>
           <li class="x">Evals: 20 av 20 användbara appar, 0,028 US$ och 10,6 s per byggsamtal</li>
         </ul>
@@ -306,13 +306,31 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
       </div>
     </details>
 
+    <details class="ms is-done">
+      <summary><span class="code">M2b</span><span class="title"><h3>Konton per person och fristående appar</h3><span>Hushållet borta, varje app står på egna ben</span></span><span class="pill done">Klar 18 nov</span></summary>
+      <div class="body">
+        <ul class="items">
+          <li class="x">Konto per person; en app delas med dem ägaren bjuder in, och bara ägaren ändrar, bjuder in och laddar ned</li>
+          <li class="x">Behörighet per app på varje tabell, bevisad med tre konton: ägare, medlem och utomstående</li>
+          <li class="x">Kvot och gränser per person och per app, kostnadslogg per person</li>
+          <li class="x">Egen adress per app (<code>/a/&lt;kortnamn&gt;</code>) utan Pailo, med inloggning och inbjudan i appens stil</li>
+          <li class="x">Installera på hemskärmen med appens namn, ikon och färg</li>
+          <li class="x">Ladda ned appen som en fil som fungerar utan nätverk och utan Pailo</li>
+        </ul>
+        <p class="gate">Klart när: två personer delar matschemat på dess egen adress utan att se Pailo, en tredje når det inte, och den nedladdade filen fungerar utan nätverk. Bekräftat på pailo.se 18 november.</p>
+        <p class="links"><a href="https://github.com/niklashedstrom/pailo/pull/18">PR #18</a> (beslut) · <a href="https://github.com/niklashedstrom/pailo/pull/19">PR #19</a> · krav i <code>openspec/specs/app-sharing</code>, <code>standalone-app</code></p>
+      </div>
+    </details>
+
     <details class="ms is-next" open>
       <summary><span class="code">M5</span><span class="title"><h3>Intervju och design</h3><span>Från vardagsproblem till färdig app</span></span><span class="pill next">Nästa</span></summary>
       <div class="body">
         <ul class="items">
-          <li>Chatt med styrda frågor</li>
+          <li>Chatt med styrda frågor om idén, som leder fram till appen personen vill ha</li>
           <li>Förslag som valbara kort, 2–3 per app</li>
           <li>Tre stilförhandsvisningar och justering med ord</li>
+          <li>Appen känns som en egen app: helskärm, egen rubrikrad och flikar längst ned på telefonen</li>
+          <li>En ny app öppnas direkt i sig själv; ändringar görs i en panel ovanpå</li>
           <li>Ändringar i samtal med versionslista och ångra</li>
           <li>Ärligt besked när något inte går, med närmaste alternativ</li>
         </ul>
@@ -331,22 +349,22 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
       <thead><tr><th>Läge</th><th>Vad</th><th>När</th></tr></thead>
       <tbody>
         <tr>
-          <td><span class="pill warn">Beslut</span></td>
+          <td><span class="pill done">Klar</span></td>
           <td>Egen e-posttjänst för inloggningsmejl
-            <span class="why">Supabase egen e-post når bara ditt Supabase-team och skickar få mejl. På gratisnivån går mejlen inte heller att få på svenska utan egen tjänst.</span></td>
-          <td>Innan mamma börjar</td>
+            <span class="why">Brevo skickar från no-reply@pailo.se. SMTP-nyckeln går ut efter högst ett år, eller efter 90 dagar utan mejl.</span></td>
+          <td>17 nov</td>
         </tr>
         <tr>
-          <td><span class="pill warn">Beslut</span></td>
+          <td><span class="pill next">Senare</span></td>
           <td>Var AI-anropen behandlas
-            <span class="why">Arbetsytan Pailo hos Anthropic står på USA och global inferens. Riktiga hushålls appbeskrivningar bör behandlas i EU om det går, och Anthropics villkor för API-data behöver läsas.</span></td>
-          <td>Innan riktiga användare bygger</td>
+            <span class="why">USA/global godkänt tills vidare 17 november. Byt till EU när det går att välja, och se över före lansering. Claude får aldrig poster.</span></td>
+          <td>Före lansering</td>
         </tr>
         <tr>
-          <td><span class="pill todo">Senare</span></td>
+          <td><span class="pill done">Klar</span></td>
           <td>Slå på byggandet i molnet
-            <span class="why">En egen nyckel för produktion i arbetsytan Pailo, som hemlighet i Supabase. Sätt dygnstak och kvoter och slå av nödbromsen. Se docs/03-arkitektur.md.</span></td>
-          <td>När mamma ska bygga</td>
+            <span class="why">På sedan 17 november: dygnstak 2 US$, 20 byggsamtal per person och månad, tak 20 US$ i månaden hos Anthropic.</span></td>
+          <td>17 nov</td>
         </tr>
         <tr>
           <td><span class="pill next">Risk</span></td>
@@ -362,8 +380,8 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
         </tr>
         <tr>
           <td><span class="pill todo">Senare</span></td>
-          <td>Radera konto och hushåll (GDPR)
-            <span class="why">Sista administratören kan inte lämna, så radering behöver ett eget flöde.</span></td>
+          <td>Radera sitt konto (GDPR)
+            <span class="why">Databasen klarar det sedan M2b: personens appar raderas med kontot. Det saknas ett flöde i Pailo för att be om det.</span></td>
           <td>Före fas 2</td>
         </tr>
         <tr>
@@ -384,14 +402,11 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
     <table>
       <thead><tr><th>Läge</th><th>Jobb</th><th>Område</th></tr></thead>
       <tbody>
-        <tr><td><span class="pill done">Klar</span></td><td>Ändra sitt eget namn i hushållet <span class="why">Jobb 001, <a href="https://github.com/niklashedstrom/pailo/pull/7">PR #7</a>, två granskningsrundor</span></td><td>Hushållet</td></tr>
-        <tr><td><span class="pill done">Klar</span></td><td>"(du)" vid ditt eget namn i medlemslistan <span class="why">Jobb 002, <a href="https://github.com/niklashedstrom/pailo/pull/9">PR #9</a>, godkänt i första rundan</span></td><td>Hushållet</td></tr>
-        <tr><td><span class="pill done">Klar</span></td><td>Administratören byter namn på hushållet <span class="why">Jobb 003, <a href="https://github.com/niklashedstrom/pailo/pull/12">PR #12</a></span></td><td>Hushållet</td></tr>
-        <tr><td><span class="pill todo">Kö</span></td><td>Ta bort en medlem, med bekräftelse</td><td>Hushållet</td></tr>
-        <tr><td><span class="pill todo">Kö</span></td><td>Lämna hushållet själv</td><td>Hushållet</td></tr>
-        <tr><td><span class="pill todo">Pausad</span></td><td>Se och återkalla öppna inbjudningar <span class="why">Pausad medan fokus ligger på byggstenarna</span></td><td>Hushållet</td></tr>
-        <tr><td><span class="pill todo">Pausad</span></td><td>Göra en medlem till administratör och ta tillbaka det</td><td>Hushållet</td></tr>
-        <tr><td><span class="pill todo">Pausad</span></td><td>Skicka och se önskemål</td><td>Hushållet</td></tr>
+        <tr><td><span class="pill done">Klar</span></td><td>Ändra sitt eget namn <span class="why">Jobb 001, <a href="https://github.com/niklashedstrom/pailo/pull/7">PR #7</a>; sedan M2b per app</span></td><td>Delning</td></tr>
+        <tr><td><span class="pill done">Klar</span></td><td>"(du)" vid ditt eget namn i medlemslistan <span class="why">Jobb 002, <a href="https://github.com/niklashedstrom/pailo/pull/9">PR #9</a></span></td><td>Delning</td></tr>
+        <tr><td><span class="pill done">Klar</span></td><td>Ta bort en medlem, lämna en app, se och återkalla inbjudningar <span class="why">Byggt i M2b, <a href="https://github.com/niklashedstrom/pailo/pull/19">PR #19</a></span></td><td>Delning</td></tr>
+        <tr><td><span class="pill todo">Bortvald</span></td><td>Administratörer och namn på hushållet <span class="why">Hushållet togs bort i M2b; en app har en ägare</span></td><td>Delning</td></tr>
+        <tr><td><span class="pill todo">Pausad</span></td><td>Skicka och se önskemål</td><td>Delning</td></tr>
         <tr><td><span class="pill todo">Kö</span></td><td>Supabase CLI v3 och kontroll av databaskraschen <span class="why">Om kraschen är borta stängs funktionerna för utloggade. Ändrar databasen, så du godkänner sammanslagningen.</span></td><td>Teknik</td></tr>
       </tbody>
     </table>
@@ -414,7 +429,7 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
     <div class="phase">
       <p class="eyebrow">feb–apr 2027</p>
       <h3>3 · Betalning och öppning</h3>
-      <p>Nya byggstenar, provperiod och abonnemang. Grind: första betalande hushåll.</p>
+      <p>Nya byggstenar, provperiod och abonnemang. Grind: första betalande kund.</p>
     </div>
   </div>
 </section>
@@ -422,9 +437,9 @@ details.ms summary:hover { background: var(--accent-soft); border-radius: 10px; 
 <section aria-labelledby="nu-h">
   <h2 id="nu-h">I siffror</h2>
   <div class="numbers">
-    <div class="num"><b>189</b><span>databastester, varav 49 för isolering</span></div>
-    <div class="num"><b>410</b><span>tester i appen, schemat, skripten och byggtjänsten</span></div>
-    <div class="num"><b>10</b><span>tabeller med behörighet per hushåll</span></div>
+    <div class="num"><b>232</b><span>databastester, varav 69 för isolering mellan appar</span></div>
+    <div class="num"><b>478</b><span>tester i appen, schemat, skripten och servern</span></div>
+    <div class="num"><b>10</b><span>tabeller med behörighet per app</span></div>
     <div class="num"><b>0,03 $</b><span>per byggsamtal, uppmätt</span></div>
   </div>
 </section>
