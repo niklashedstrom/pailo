@@ -1,152 +1,178 @@
--- Household isolation: for every table, household B's admin (the strongest
--- role B has) can neither read, create, change nor delete A's rows, A's
--- data is byte-for-byte unchanged afterwards, and each side still sees its
--- own data. This is M2's definition of done.
+-- Isolation between apps. Three kinds of people try to reach app A:
+--   - the outsider, who is in no app;
+--   - B's owner, the strongest role someone in another app has;
+--   - A's member, who is in app A but not in A2, the owner's other app.
+-- For every table they can neither read, create, change nor delete what
+-- they are not a member of, the apps are byte-for-byte unchanged afterwards,
+-- and each person still sees their own data. This is M2b's proof that a
+-- third person cannot reach a shared app.
 begin;
-select plan(49);
+select plan(69);
 
 select tests.seed();
+insert into public.ai_calls (app_id, user_id, kind, status) values
+  (tests.id('app_a'), tests.id('a_owner'), 'change', 'ok'),
+  (tests.id('app_b'), tests.id('b_owner'), 'change', 'ok');
+insert into public.app_exports (app_id, user_id) values
+  (tests.id('app_a'), tests.id('a_owner')),
+  (tests.id('app_b'), tests.id('b_owner'));
 
 create temporary table a_before as
-select * from tests.household_fingerprint(tests.id('household_a'));
+select 'app_a' as app, * from tests.app_fingerprint(tests.id('app_a'))
+union all
+select 'app_a2', * from tests.app_fingerprint(tests.id('app_a2'));
+grant select on a_before to authenticated;
 
-select tests.authenticate_as('b_admin');
+-- Reading and writing app A from outside: the outsider and B's owner --------------------
 
--- households ------------------------------------------------------------------------
-select is_empty($$ select 1 from public.households where id = tests.id('household_a') $$,
-  'households: B cannot read A');
-select throws_ok($$ insert into public.households (id, name) values (gen_random_uuid(), 'Falskt') $$,
-  '42501', null, 'households: B cannot create rows directly');
-select is(tests.rows_affected($$ update public.households set name = 'Kapad' where id = tests.id('household_a') $$),
-  0::bigint, 'households: B cannot change A');
-select throws_ok($$ delete from public.households where id = tests.id('household_a') $$,
-  '42501', null, 'households: B cannot delete A');
+create function tests.cannot_reach_app_a(person text)
+returns setof text
+language plpgsql
+as $f$
+begin
+  perform tests.authenticate_as(person);
 
--- members -------------------------------------------------------------------------------
-select is_empty($$ select 1 from public.members where household_id = tests.id('household_a') $$,
-  'members: B cannot read A''s members');
-select throws_ok($$ insert into public.members (household_id, user_id, role, display_name)
-                   values (tests.id('household_a'), tests.id('b_admin'), 'admin', 'Inkräktare') $$,
-  '42501', null, 'members: B cannot add itself to A');
-select is(tests.rows_affected($$ update public.members set role = 'member' where household_id = tests.id('household_a') $$),
-  0::bigint, 'members: B cannot change A''s members');
-select is(tests.rows_affected($$ delete from public.members where household_id = tests.id('household_a') $$),
-  0::bigint, 'members: B cannot remove A''s members');
+  return next is_empty($$ select 1 from public.apps where id = tests.id('app_a') $$,
+    person || ': cannot read app A');
+  return next is_empty($$ select 1 from public.app_members where app_id = tests.id('app_a') $$,
+    person || ': cannot read A''s members');
+  return next is_empty($$ select 1 from public.invites where app_id = tests.id('app_a') $$,
+    person || ': cannot read A''s invites');
+  return next is_empty($$ select 1 from public.app_versions where app_id = tests.id('app_a') $$,
+    person || ': cannot read A''s versions');
+  return next is_empty($$ select 1 from public.records where app_id = tests.id('app_a') $$,
+    person || ': cannot read A''s records');
+  return next is_empty($$ select 1 from public.wishes where app_id = tests.id('app_a') $$,
+    person || ': cannot read A''s wishes');
+  return next is_empty($$ select 1 from public.ai_calls where app_id = tests.id('app_a') $$,
+    person || ': cannot read A''s cost log');
+  return next is_empty($$ select 1 from public.app_exports where app_id = tests.id('app_a') $$,
+    person || ': cannot read A''s downloads');
 
--- invites -------------------------------------------------------------------------------
-select is_empty($$ select 1 from public.invites where household_id = tests.id('household_a') $$,
-  'invites: B cannot read A''s invites');
-select throws_ok($$ insert into public.invites (household_id, token_hash, expires_at)
-                   values (tests.id('household_a'), '\x00', now() + interval '1 day') $$,
-  '42501', null, 'invites: B cannot create rows directly');
-select throws_ok($$ select public.create_invite(tests.id('household_a')) $$,
-  '42501', null, 'invites: B cannot create an invite to A');
-select is(tests.rows_affected($$ update public.invites set revoked_at = now() where household_id = tests.id('household_a') $$),
-  0::bigint, 'invites: B cannot revoke A''s invites');
-select throws_ok($$ delete from public.invites where household_id = tests.id('household_a') $$,
-  '42501', null, 'invites: B cannot delete A''s invites');
+  return next throws_ok($$ insert into public.app_members (app_id, user_id, role, display_name)
+                           values (tests.id('app_a'), auth.uid(), 'member', 'Inkräktare') $$,
+    '42501', null, person || ': cannot add themselves to A');
+  return next is(tests.rows_affected($$ update public.app_members set display_name = 'Kapad' where app_id = tests.id('app_a') $$),
+    0::bigint, person || ': cannot rename A''s members');
+  return next is(tests.rows_affected($$ delete from public.app_members where app_id = tests.id('app_a') $$),
+    0::bigint, person || ': cannot remove A''s members');
+  return next throws_ok($$ select public.create_invite(tests.id('app_a')) $$,
+    '42501', null, person || ': cannot invite to A');
+  return next is(tests.rows_affected($$ update public.invites set revoked_at = now() where app_id = tests.id('app_a') $$),
+    0::bigint, person || ': cannot revoke A''s invites');
+  return next throws_ok($$ insert into public.records (app_id, collection, data)
+                           values (tests.id('app_a'), 'fri', '{"text":"inkräktare"}') $$,
+    '42501', null, person || ': cannot add a record to A');
+  return next is(tests.rows_affected($$ update public.records set data = '{}' where app_id = tests.id('app_a') $$),
+    0::bigint, person || ': cannot change A''s records');
+  return next is(tests.rows_affected($$ delete from public.records where app_id = tests.id('app_a') $$),
+    0::bigint, person || ': cannot delete A''s records');
+  return next throws_ok($$ insert into public.wishes (app_id, text) values (tests.id('app_a'), 'Falskt') $$,
+    '23514', null, person || ': cannot attach a wish to A');
+  return next throws_ok($$ insert into public.app_versions (app_id, description)
+                           values (tests.id('app_a'), tests.app_description('Kapad')) $$,
+    '42501', null, person || ': cannot save a version of A');
+end;
+$f$;
 
--- apps ------------------------------------------------------------------------------------
-select is_empty($$ select 1 from public.apps where household_id = tests.id('household_a') $$,
-  'apps: B cannot read A''s apps');
-select throws_ok($$ insert into public.apps (household_id, name) values (tests.id('household_a'), 'Falsk') $$,
-  '42501', null, 'apps: B cannot create an app in A');
-select throws_ok($$ update public.apps set name = 'Kapad' where household_id = tests.id('household_a') $$,
-  '42501', null, 'apps: B cannot change A''s apps');
-select throws_ok($$ delete from public.apps where household_id = tests.id('household_a') $$,
-  '42501', null, 'apps: B cannot delete A''s apps');
+select * from tests.cannot_reach_app_a('outsider');
+select * from tests.cannot_reach_app_a('b_owner');
 
--- app_versions -------------------------------------------------------------------------
-select is_empty($$ select 1 from public.app_versions where household_id = tests.id('household_a') $$,
-  'app_versions: B cannot read A''s versions');
-select throws_ok($$ insert into public.app_versions (app_id, description)
-                   values (tests.id('app_a'), tests.app_description('Kapad')) $$,
-  '42501', null, 'app_versions: B cannot save a version of A''s app');
-select throws_ok($$ update public.app_versions set description = '{}' where household_id = tests.id('household_a') $$,
-  '42501', null, 'app_versions: B cannot change A''s versions');
-select throws_ok($$ delete from public.app_versions where household_id = tests.id('household_a') $$,
-  '42501', null, 'app_versions: B cannot delete A''s versions');
+-- Clients write no table directly where only the server may -----------------------------
 
--- records ---------------------------------------------------------------------------------
-select is_empty($$ select 1 from public.records where household_id = tests.id('household_a') $$,
-  'records: B cannot read A''s records');
-select throws_ok($$ insert into public.records (app_id, collection, data)
-                   values (tests.id('app_a'), 'fri', '{"text":"inkräktare"}') $$,
-  '42501', null, 'records: B cannot add a record to A''s app');
-select is(tests.rows_affected($$ update public.records set data = '{}' where household_id = tests.id('household_a') $$),
-  0::bigint, 'records: B cannot change A''s records');
-select is(tests.rows_affected($$ delete from public.records where household_id = tests.id('household_a') $$),
-  0::bigint, 'records: B cannot delete A''s records');
+select tests.authenticate_as('outsider');
+select throws_ok($$ insert into public.apps (name) values ('Falsk') $$,
+  '42501', null, 'apps: nobody creates an app directly');
+select throws_ok($$ delete from public.apps where id = tests.id('app_a') $$,
+  '42501', null, 'apps: nobody deletes an app directly');
+select throws_ok($$ delete from public.app_versions $$,
+  '42501', null, 'app_versions: nobody deletes versions');
+select throws_ok($$ update public.wishes set text = 'Kapat' $$,
+  '42501', null, 'wishes: nobody changes wishes');
+select throws_ok($$ insert into public.ai_calls (user_id, kind) values (auth.uid(), 'create') $$,
+  '42501', null, 'ai_calls: nobody writes the cost log');
+select throws_ok($$ insert into public.app_exports (app_id, user_id) values (tests.id('app_a'), auth.uid()) $$,
+  '42501', null, 'app_exports: nobody writes the download log');
 
--- wishes ----------------------------------------------------------------------------------
-select is_empty($$ select 1 from public.wishes where household_id = tests.id('household_a') $$,
-  'wishes: B cannot read A''s wishes');
-select throws_ok($$ insert into public.wishes (household_id, text) values (tests.id('household_a'), 'Falskt') $$,
-  '42501', null, 'wishes: B cannot add a wish to A');
-select throws_ok($$ update public.wishes set text = 'Kapat' where household_id = tests.id('household_a') $$,
-  '42501', null, 'wishes: B cannot change A''s wishes');
-select throws_ok($$ delete from public.wishes where household_id = tests.id('household_a') $$,
-  '42501', null, 'wishes: B cannot delete A''s wishes');
+-- A member of app A is not a member of A2 -------------------------------------------------
 
--- B still sees its own data ---------------------------------------------------------------
-select isnt_empty($$ select 1 from public.households where id = tests.id('household_b') $$, 'B sees its household');
-select isnt_empty($$ select 1 from public.members where household_id = tests.id('household_b') $$, 'B sees its members');
-select isnt_empty($$ select 1 from public.invites where household_id = tests.id('household_b') $$, 'B sees its invites');
-select isnt_empty($$ select 1 from public.apps where household_id = tests.id('household_b') $$, 'B sees its apps');
-select isnt_empty($$ select 1 from public.app_versions where household_id = tests.id('household_b') $$, 'B sees its versions');
-select is((select count(*) from public.records), 4::bigint, 'B sees exactly its own four records');
-select isnt_empty($$ select 1 from public.wishes where household_id = tests.id('household_b') $$, 'B sees its wishes');
+select tests.authenticate_as('a_member');
+select is_empty($$ select 1 from public.apps where id = tests.id('app_a2') $$,
+  'A''s member cannot read A2');
+select is_empty($$ select 1 from public.records where app_id = tests.id('app_a2') $$,
+  'A''s member cannot read A2''s records');
+select is_empty($$ select 1 from public.app_versions where app_id = tests.id('app_a2') $$,
+  'A''s member cannot read A2''s versions');
+select is_empty($$ select 1 from public.app_members where app_id = tests.id('app_a2') $$,
+  'A''s member cannot read A2''s members');
+select throws_ok($$ insert into public.records (app_id, collection, data) values (tests.id('app_a2'), 'fri', '{}') $$,
+  '42501', null, 'A''s member cannot add a record to A2');
+select is(tests.rows_affected($$ update public.records set data = '{}' where app_id = tests.id('app_a2') $$),
+  0::bigint, 'A''s member cannot change A2''s records');
+select is(tests.rows_affected($$ delete from public.records where app_id = tests.id('app_a2') $$),
+  0::bigint, 'A''s member cannot delete A2''s records');
+select is_empty($$ select 1 from public.invites $$,
+  'A''s member cannot read invites, not even to app A');
+select is_empty($$ select 1 from public.ai_calls union all select 1 from public.app_exports $$,
+  'A''s member cannot read the owner''s cost log or downloads');
 
--- The other direction: A sees nothing of B ----------------------------------------------
-select tests.authenticate_as('a_admin');
-select results_eq(
-  $$ select (select count(*) from public.households where id <> tests.id('household_a'))
-          + (select count(*) from public.members where household_id <> tests.id('household_a'))
-          + (select count(*) from public.invites where household_id <> tests.id('household_a'))
-          + (select count(*) from public.apps where household_id <> tests.id('household_a'))
-          + (select count(*) from public.app_versions where household_id <> tests.id('household_a'))
-          + (select count(*) from public.records where household_id <> tests.id('household_a'))
-          + (select count(*) from public.wishes where household_id <> tests.id('household_a')) $$,
-  $$ values (0::bigint) $$,
-  'A sees no rows from any other household in any table'
-);
-select is((select count(*) from public.records), 4::bigint, 'A sees exactly its own four records');
+-- Everyone still sees their own -----------------------------------------------------------
 
--- Someone in no household sees nothing at all ------------------------------------------
+select results_eq($$ select id from public.apps $$, $$ values (tests.id('app_a')) $$,
+  'A''s member sees exactly app A');
+select is((select count(*) from public.records), 4::bigint, 'A''s member sees exactly A''s four records');
+
+select tests.authenticate_as('a_owner');
+select results_eq($$ select id from public.apps order by id $$,
+  $$ values (tests.id('app_a')), (tests.id('app_a2')) $$, 'A''s owner sees both their apps');
+select is((select count(*) from public.records), 5::bigint, 'A''s owner sees the five records in their apps');
+select is((select count(*) from public.invites), 1::bigint, 'A''s owner sees A''s invite');
+select is((select count(*) from public.ai_calls), 1::bigint, 'A''s owner sees their own cost log row');
+select is((select count(*) from public.app_exports), 1::bigint, 'A''s owner sees their own download');
+
+select tests.authenticate_as('b_owner');
+select results_eq($$ select id from public.apps $$, $$ values (tests.id('app_b')) $$,
+  'B''s owner sees exactly app B');
+
 select tests.authenticate_as('outsider');
 select results_eq(
-  $$ select (select count(*) from public.households) + (select count(*) from public.members)
-          + (select count(*) from public.invites) + (select count(*) from public.apps)
-          + (select count(*) from public.app_versions) + (select count(*) from public.records)
-          + (select count(*) from public.wishes) $$,
+  $$ select (select count(*) from public.apps) + (select count(*) from public.app_members)
+          + (select count(*) from public.invites) + (select count(*) from public.app_versions)
+          + (select count(*) from public.records) + (select count(*) from public.wishes)
+          + (select count(*) from public.ai_calls) + (select count(*) from public.app_exports) $$,
   $$ values (0::bigint) $$,
-  'a signed-in person without a household sees nothing'
+  'someone in no app sees nothing in any table'
 );
 
--- Not signed in: no access to any table ---------------------------------------------------
+-- Not signed in: only the app's face ------------------------------------------------------
+
 select tests.authenticate_as_anon();
-select throws_ok($$ select 1 from public.households $$, '42501', null, 'signed out: households closed');
-select throws_ok($$ select 1 from public.members $$, '42501', null, 'signed out: members closed');
-select throws_ok($$ select 1 from public.invites $$, '42501', null, 'signed out: invites closed');
 select throws_ok($$ select 1 from public.apps $$, '42501', null, 'signed out: apps closed');
-select throws_ok($$ select 1 from public.app_versions $$, '42501', null, 'signed out: app versions closed');
+select throws_ok($$ select 1 from public.app_members $$, '42501', null, 'signed out: members closed');
+select throws_ok($$ select 1 from public.invites $$, '42501', null, 'signed out: invites closed');
+select throws_ok($$ select 1 from public.app_versions $$, '42501', null, 'signed out: versions closed');
 select throws_ok($$ select 1 from public.records $$, '42501', null, 'signed out: records closed');
 select throws_ok($$ select 1 from public.wishes $$, '42501', null, 'signed out: wishes closed');
 
--- A's data is unchanged ------------------------------------------------------------------
+-- The apps are unchanged ------------------------------------------------------------------
+
 select tests.clear_authentication();
 select results_eq(
-  $$ select tbl, checksum from tests.household_fingerprint(tests.id('household_a')) order by tbl $$,
-  $$ select tbl, checksum from a_before order by tbl $$,
-  'every table: A''s rows are exactly as before'
+  $$ select app, tbl, checksum from (
+       select 'app_a' as app, * from tests.app_fingerprint(tests.id('app_a'))
+       union all
+       select 'app_a2', * from tests.app_fingerprint(tests.id('app_a2'))
+     ) now order by app, tbl $$,
+  $$ select app, tbl, checksum from a_before order by app, tbl $$,
+  'every table: A''s and A2''s rows are exactly as before'
 );
 select is(
-  (select count(*) from a_before where checksum <> md5('')),
-  7::bigint,
-  'the fingerprint covered real rows in all seven tables'
+  (select count(*) from a_before where app = 'app_a' and checksum <> md5('')),
+  6::bigint,
+  'the fingerprint covered real rows in all six tables'
 );
 
--- Every table in public has RLS turned on ---------------------------------------------
+-- Every table in public has RLS turned on -------------------------------------------------
 select is_empty(
   $$ select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
      where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity $$,

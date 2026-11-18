@@ -71,7 +71,6 @@ export function BuildNotice({
  */
 export function BuildForm({
   api,
-  householdId,
   label,
   hint,
   submitLabel,
@@ -79,7 +78,6 @@ export function BuildForm({
   onSaved,
 }: {
   api: PailoApi
-  householdId: string
   label: string
   hint: string
   submitLabel: string
@@ -94,21 +92,21 @@ export function BuildForm({
   const [remaining, setRemaining] = useState<number | null>(null)
 
   const refreshRemaining = () =>
-    api.remainingBuilds(householdId).then(
+    api.remainingBuilds().then(
       (left) => setRemaining(left),
       () => setRemaining(null),
     )
 
   useEffect(() => {
     let active = true
-    api.remainingBuilds(householdId).then(
+    api.remainingBuilds().then(
       (left) => active && setRemaining(left),
       () => {},
     )
     return () => {
       active = false
     }
-  }, [api, householdId])
+  }, [api])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -146,8 +144,8 @@ export function BuildForm({
       {remaining !== null && (
         <p className="hint">
           {remaining === 0
-            ? 'Hushållet har inga ändringar kvar den här månaden.'
-            : `Hushållet har ${remaining} ${remaining === 1 ? 'ändring' : 'ändringar'} kvar den här månaden.`}
+            ? 'Du har inga ändringar kvar den här månaden.'
+            : `Du har ${remaining} ${remaining === 1 ? 'ändring' : 'ändringar'} kvar den här månaden.`}
         </p>
       )}
       <button type="submit" disabled={busy || wish.trim() === ''}>

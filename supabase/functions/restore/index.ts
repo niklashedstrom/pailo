@@ -1,6 +1,6 @@
 // Undo and "go back here": an earlier version is saved again as a new
 // version. No AI is called and nothing counts against the quota.
-import { json, loadApp, preflight, serviceClient, signedInUser, UUID } from '../_shared/server.ts'
+import { isOwner, json, loadApp, preflight, serviceClient, signedInUser, UUID } from '../_shared/server.ts'
 
 const when = new Intl.DateTimeFormat('sv-SE', {
   timeZone: 'Europe/Stockholm',
@@ -24,6 +24,8 @@ Deno.serve(async (request) => {
   const db = serviceClient()
   const userId = await signedInUser(db, request)
   if (!userId) return json({ outcome: 'signed-out' }, 401)
+  // Only the owner goes back; someone else's app looks like one that does not exist.
+  if (!(await isOwner(db, appId, userId))) return json({ outcome: 'not-found' })
 
   let target
   try {

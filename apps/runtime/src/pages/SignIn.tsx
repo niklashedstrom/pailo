@@ -3,10 +3,16 @@ import type { PailoApi } from '../api'
 
 interface Props {
   api: PailoApi
-  invited: boolean
+  /** The page's heading: Pailo, or the app's name on the app's own address. */
+  title: string
+  /** One sentence on why and how to sign in. */
+  intro: string
+  /** Where the link in the mail brings the person back to. */
+  returnTo: string
 }
 
-export default function SignIn({ api, invited }: Props) {
+/** Sign in without a password. Used by Pailo and, in the app's own style, by every app. */
+export default function SignIn({ api, title, intro, returnTo }: Props) {
   const [email, setEmail] = useState('')
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle')
 
@@ -14,7 +20,7 @@ export default function SignIn({ api, invited }: Props) {
     event.preventDefault()
     setState('sending')
     try {
-      await api.sendSignInLink(email.trim())
+      await api.sendSignInLink(email.trim(), returnTo)
       setState('sent')
     } catch {
       setState('failed')
@@ -38,12 +44,8 @@ export default function SignIn({ api, invited }: Props) {
 
   return (
     <>
-      <h1>Pailo</h1>
-      {invited ? (
-        <p>Du har blivit inbjuden till ett hushåll. Logga in för att gå med.</p>
-      ) : (
-        <p>Logga in med din e-postadress. Du får en länk i mejlet, inget lösenord behövs.</p>
-      )}
+      <h1>{title}</h1>
+      <p>{intro}</p>
       <form onSubmit={submit}>
         <label htmlFor="email">Din e-postadress</label>
         <input

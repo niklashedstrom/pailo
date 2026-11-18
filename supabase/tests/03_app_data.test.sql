@@ -1,8 +1,8 @@
--- Apps, versions, records and wishes within one household: server-only
+-- Apps, versions, records and wishes within one app: server-only
 -- writes for apps, immutable versions, per-collection access, system
 -- fields and size limits.
 begin;
-select plan(42);
+select plan(44);
 
 select tests.seed();
 
@@ -12,35 +12,35 @@ select tests.authenticate_as('a_member');
 select results_eq(
   $$ select id from public.apps $$,
   $$ values (tests.id('app_a')) $$,
-  'a member sees the household''s apps'
+  'a member sees the apps they are in, not the owner''s other app'
 );
 select results_eq(
   $$ select app_id, version from public.app_versions $$,
   $$ values (tests.id('app_a'), 1) $$,
-  'a member sees the household''s app versions'
+  'a member sees the versions of those apps'
 );
 
-select tests.authenticate_as('a_admin');
+select tests.authenticate_as('a_owner');
 select throws_ok(
-  $$ insert into public.apps (household_id, name) values (tests.id('household_a'), 'Egen') $$,
+  $$ insert into public.apps (name) values ('Egen') $$,
   '42501', null,
-  'an admin cannot create an app directly'
+  'an owner cannot create an app directly'
 );
 select throws_ok(
   $$ insert into public.app_versions (app_id, description)
      values (tests.id('app_a'), tests.app_description('Manipulerad')) $$,
   '42501', null,
-  'an admin cannot save a new app version directly'
+  'an owner cannot save a new app version directly'
 );
 select throws_ok(
   $$ update public.apps set name = 'Nytt namn' $$,
   '42501', null,
-  'an admin cannot change an app directly'
+  'an owner cannot change an app directly'
 );
 select throws_ok(
   $$ delete from public.app_versions $$,
   '42501', null,
-  'an admin cannot delete app versions'
+  'an owner cannot delete app versions'
 );
 
 -- Server code saves versions; they never change -------------------------------------
@@ -92,11 +92,13 @@ select throws_ok(
   '23514', null,
   'a description must be an object'
 );
+select tests.authenticate_as('a_owner');
 select throws_ok(
-  $$ update public.apps set household_id = tests.id('household_b') where id = tests.id('app_a') $$,
-  '23514', null,
-  'an app cannot move to another household'
+  $$ update public.app_members set user_id = tests.id('b_owner') where user_id = tests.id('a_owner') $$,
+  '42501', null,
+  'a client cannot hand the app to another owner'
 );
+select tests.authenticate_as_service();
 
 -- Records: access per collection --------------------------------------------------
 
@@ -126,21 +128,21 @@ select is(
   'ändrad',
   'a member can change their own record in an add collection'
 );
-update public.records set data = '{"text":"ändrad"}' where id = tests.id('rec_a_lagg_admin');
+update public.records set data = '{"text":"ändrad"}' where id = tests.id('rec_a_lagg_owner');
 select is(
-  (select data ->> 'text' from public.records where id = tests.id('rec_a_lagg_admin')),
+  (select data ->> 'text' from public.records where id = tests.id('rec_a_lagg_owner')),
   'lagg',
   'a member cannot change someone else''s record in an add collection'
 );
-update public.records set data = '{"text":"ändrad"}' where id = tests.id('rec_a_las_admin');
+update public.records set data = '{"text":"ändrad"}' where id = tests.id('rec_a_las_owner');
 select is(
-  (select data ->> 'text' from public.records where id = tests.id('rec_a_las_admin')),
+  (select data ->> 'text' from public.records where id = tests.id('rec_a_las_owner')),
   'las',
   'a member cannot change a record in a read collection'
 );
-update public.records set data = '{"text":"ändrad"}' where id = tests.id('rec_a_fri_admin');
+update public.records set data = '{"text":"ändrad"}' where id = tests.id('rec_a_fri_owner');
 select results_eq(
-  $$ select data ->> 'text', updated_by from public.records where id = tests.id('rec_a_fri_admin') $$,
+  $$ select data ->> 'text', updated_by from public.records where id = tests.id('rec_a_fri_owner') $$,
   $$ values ('ändrad'::text, tests.id('a_member')) $$,
   'a member can change anyone''s record in an edit collection, and is recorded as the one who changed it'
 );
@@ -150,56 +152,56 @@ select isnt_empty(
   $$ select 1 from public.records where id = tests.id('rec_a_lagg_member') $$,
   'a member cannot delete in an add collection, not even their own record'
 );
-delete from public.records where id = tests.id('rec_a_las_admin');
+delete from public.records where id = tests.id('rec_a_las_owner');
 select isnt_empty(
-  $$ select 1 from public.records where id = tests.id('rec_a_las_admin') $$,
+  $$ select 1 from public.records where id = tests.id('rec_a_las_owner') $$,
   'a member cannot delete in a read collection'
 );
-delete from public.records where id = tests.id('rec_a_fri_admin');
+delete from public.records where id = tests.id('rec_a_fri_owner');
 select is_empty(
-  $$ select 1 from public.records where id = tests.id('rec_a_fri_admin') $$,
+  $$ select 1 from public.records where id = tests.id('rec_a_fri_owner') $$,
   'a member can delete in an edit collection'
 );
 
--- Admins can do everything with existing collections
+-- The owner can do everything with existing collections
 select tests.clear_authentication();
 insert into public.records (id, app_id, collection, data, created_by)
 values ('a6000000-0000-4000-8000-0000000000ff', tests.id('app_a'), 'las', '{"text":"medlemmens"}', tests.id('a_member'));
 
-select tests.authenticate_as('a_admin');
-update public.records set data = '{"text":"admin"}' where id = 'a6000000-0000-4000-8000-0000000000ff';
+select tests.authenticate_as('a_owner');
+update public.records set data = '{"text":"ägaren"}' where id = 'a6000000-0000-4000-8000-0000000000ff';
 select is(
   (select data ->> 'text' from public.records where id = 'a6000000-0000-4000-8000-0000000000ff'),
-  'admin',
-  'an admin can change another member''s record in a read collection'
+  'ägaren',
+  'the owner can change a member''s record in a read collection'
 );
 select lives_ok(
   $$ insert into public.records (app_id, collection, data) values (tests.id('app_a'), 'las', '{}') $$,
-  'an admin can add to a read collection'
+  'the owner can add to a read collection'
 );
 select throws_ok(
   $$ insert into public.records (app_id, collection, data) values (tests.id('app_a'), 'lankar', '{}') $$,
   '42501', null,
-  'not even an admin can add to a collection the app does not have'
+  'not even the owner can add to a collection the app does not have'
 );
 delete from public.records where id = tests.id('rec_a_lagg_member');
 select is_empty(
   $$ select 1 from public.records where id = tests.id('rec_a_lagg_member') $$,
-  'an admin can delete any record'
+  'the owner can delete any record'
 );
 
 -- System fields -------------------------------------------------------------------
 
 select tests.authenticate_as('a_member');
 insert into public.records (id, app_id, collection, data, created_by)
-values ('a6000000-0000-4000-8000-0000000000fe', tests.id('app_a'), 'fri', '{}', tests.id('a_admin'));
+values ('a6000000-0000-4000-8000-0000000000fe', tests.id('app_a'), 'fri', '{}', tests.id('a_owner'));
 select results_eq(
   $$ select created_by, updated_by from public.records where id = 'a6000000-0000-4000-8000-0000000000fe' $$,
   $$ values (tests.id('a_member'), tests.id('a_member')) $$,
   'a forged creator is replaced by the signed-in person'
 );
 select throws_ok(
-  $$ update public.records set created_by = tests.id('a_admin') where id = 'a6000000-0000-4000-8000-0000000000fe' $$,
+  $$ update public.records set created_by = tests.id('a_owner') where id = 'a6000000-0000-4000-8000-0000000000fe' $$,
   '42501', null,
   'the creator cannot be changed'
 );
@@ -243,19 +245,23 @@ select throws_ok(
 
 -- Wishes ------------------------------------------------------------------------------
 
-insert into public.wishes (household_id, app_id, text, created_by)
-values (tests.id('household_a'), tests.id('app_a'), 'skicka sms till barnen', tests.id('a_admin'));
-select tests.authenticate_as('a_admin');
+insert into public.wishes (app_id, text, created_by)
+values (tests.id('app_a'), 'skicka sms till barnen', tests.id('a_owner'));
 select results_eq(
   $$ select created_by from public.wishes where text = 'skicka sms till barnen' $$,
   $$ values (tests.id('a_member')) $$,
-  'a wish is saved with the member as sender and other members can read it'
+  'a wish is saved with the member as sender, and the member can read it'
+);
+select tests.authenticate_as('a_owner');
+select results_eq(
+  $$ select created_by from public.wishes where text = 'skicka sms till barnen' $$,
+  $$ values (tests.id('a_member')) $$,
+  'the app''s owner can read it too'
 );
 select throws_ok(
-  $$ insert into public.wishes (household_id, app_id, text)
-     values (tests.id('household_a'), tests.id('app_b'), 'fel app') $$,
+  $$ insert into public.wishes (app_id, text) values (tests.id('app_b'), 'fel app') $$,
   '23514', null,
-  'a wish cannot point at another household''s app'
+  'a wish cannot point at an app the person is not in'
 );
 select throws_ok(
   $$ update public.wishes set text = 'ändrat' $$,
@@ -268,8 +274,13 @@ select throws_ok(
   'wishes cannot be deleted'
 );
 select lives_ok(
-  $$ insert into public.wishes (household_id, text) values (tests.id('household_a'), 'utan app') $$,
+  $$ insert into public.wishes (text) values ('utan app') $$,
   'a wish does not need an app'
+);
+select tests.authenticate_as('a_member');
+select is_empty(
+  $$ select 1 from public.wishes where text = 'utan app' $$,
+  'a wish without an app is only seen by the person who wrote it'
 );
 
 -- Deleting an app removes its versions and records -------------------------------------

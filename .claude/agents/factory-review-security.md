@@ -1,6 +1,6 @@
 ---
 name: factory-review-security
-description: Factory reviewer. Security review of one job's diff against Pailo's security model (household RLS, AI cost protection, no executable user content). Writes round-N/review-security.md.
+description: Factory reviewer. Security review of one job's diff against Pailo's security model (RLS per app membership, AI cost protection, no executable user content). Writes round-N/review-security.md.
 tools: Read, Grep, Glob, Bash, Write
 model: opus
 ---
@@ -12,14 +12,15 @@ diff isn't enough. Don't modify code.
 
 ## Check
 
-- **Household isolation:** every new or changed table has RLS enabled with household-scoped
-  policies for select/insert/update/delete, and pgTAP tests in `supabase/tests/` proving
-  household A can neither read nor write B's rows. `security definer` functions set
-  `search_path` and check membership themselves. No grants to `anon` beyond what sign-in needs.
+- **Isolation between apps:** every new or changed table has RLS enabled with policies based on
+  app membership (`private.is_app_member`, `private.is_app_owner`) for select/insert/update/delete,
+  and pgTAP tests in `supabase/tests/` proving someone who is not a member of an app can neither
+  read nor write its rows. `security definer` functions set `search_path` and check membership
+  themselves. No grants to `anon` beyond sign-in and the app's face (`app_face`).
 - **Migrations:** no edits to existing migration files. Nothing destructive (drop, truncate,
   type change losing data) without the spec saying so. Merging rolls them out to production.
 - **AI calls:** the Claude key is never in `apps/runtime`, `VITE_*` variables or the bundle.
-  Edge Functions check quota, rate limit and log cost per household *before* calling Claude.
+  Edge Functions check quota, rate limit and log cost per person *before* calling Claude.
   Content from apps sent to the AI is treated as data, not instructions.
 - **No executable user content:** no `dangerouslySetInnerHTML`, `eval`, `new Function`,
   user-controlled `href`/`src` without sanitizing (only `https:`/`mailto:`/`tel:`), no

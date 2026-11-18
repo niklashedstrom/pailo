@@ -8,7 +8,7 @@ Första användaren är mamma, och hennes första app är familjens matschema.
 
 ## Status
 
-M0 (grunden), M1 (appschemat), M2 (hushåll, inloggning och behörighet), M3 (runtime) och M4 (byggtjänsten) är klara och Pailo finns på https://pailo.se. Man beskriver en app eller en ändring med egna ord, byggtjänsten gör om det till en giltig ny version av appbeskrivningen, och allt kan ångras. Byggandet i molnet är på sedan 17 november 2026. Nästa steg är M2b (konton per person i stället för hushåll, och fristående appar som fungerar utan Pailo) och sedan M5 (intervju och design). Stegen nedan beskriver hushållen som de fungerar fram till M2b. Kraven finns i [openspec/specs](openspec/specs). Plan: [docs/06-roadmap.md](docs/06-roadmap.md).
+M0 (grunden), M1 (appschemat), M2 (inloggning och behörighet), M3 (runtime) och M4 (byggtjänsten) är klara och Pailo finns på https://pailo.se. Man beskriver en app eller en ändring med egna ord, byggtjänsten gör om det till en giltig ny version av appbeskrivningen, och allt kan ångras. Byggandet i molnet är på sedan 17 november 2026. M2b är byggd: varje person har ett eget konto, en app delas med dem ägaren bjuder in, varje app har en egen adress utan Pailo och kan laddas ned som en fil som fungerar utan nätverk. Den räknas som klar när klart-kontrollen efter utrullningen är gjord. Sedan kommer M5 (intervju och design). Kraven finns i [openspec/specs](openspec/specs). Plan: [docs/06-roadmap.md](docs/06-roadmap.md).
 
 ## Dokumentation
 
@@ -49,23 +49,22 @@ Runtime pratar med den lokala Supabase. Inloggningsmejlen hamnar i Mailpit i st�
 2. `npm run dev` och öppna http://localhost:5173.
 3. Ange en påhittad e-postadress, till exempel `anna@exempel.se`.
 4. Öppna Mailpit på http://127.0.0.1:55424 i samma webbläsare och klicka på länken i mejlet "Logga in i Pailo".
-5. Namnge hushållet och tryck på *Skapa inbjudningslänk*. Kopiera länken.
-6. Öppna ett privat fönster (eget konto), klistra in länken, logga in som `bertil@exempel.se` via Mailpit i samma privata fönster. Bertil hamnar direkt i Annas hushåll.
+5. Du hamnar i *Mina appar*. Lägg in en app enligt *Prova en app lokalt* nedan, öppna den med *Ändra*, tryck på *Dela appen* och *Skapa inbjudningslänk*. Kopiera länken.
+6. Öppna ett privat fönster (eget konto), klistra in länken och logga in som `bertil@exempel.se` via Mailpit. Bertil hamnar direkt i appen, på dess egen adress.
 
 Länken i mejlet måste öppnas i samma webbläsare som bad om den. `supabase db reset` tömmer databasen, även testkonton.
 
 ### Prova en app lokalt
 
-Pailo har inga färdiga appar; användarnas appar byggs av byggstenarna, av byggtjänsten. För att prova runtime utan byggtjänsten kan du lägga in en handskriven beskrivning i ett hushåll i den **lokala** databasen. Verktyget validerar beskrivningen först och vägrar att skriva till molnet.
+Pailo har inga färdiga appar; användarnas appar byggs av byggstenarna, av byggtjänsten. För att prova runtime utan byggtjänsten kan du lägga in en handskriven beskrivning som en app i den **lokala** databasen. Verktyget validerar beskrivningen först och vägrar att skriva till molnet.
 
-1. Logga in lokalt och skapa ett hushåll enligt stegen ovan.
-2. Hitta hushållets id i Supabase Studio på http://127.0.0.1:55423 (tabellen `households`), eller med
-   `docker exec supabase_db_pailo psql -U postgres -tAc "select id, name from households"`.
-3. Lägg in en beskrivning:
+1. Logga in lokalt en gång enligt stegen ovan, så att kontot finns.
+2. Lägg in en beskrivning med kontot som ägare:
    ```sh
-   npm run dev:app -- <hushålls-id> packages/schema/examples/matschema.json
+   npm run dev:app -- anna@exempel.se packages/schema/examples/matschema.json
    ```
-   Verktyget skriver ut appens adress. Med appens id i stället för hushållets sparas filen som en ny version.
-4. Prova med två konton: bjud in det andra kontot enligt stegen ovan, öppna appens adress i båda fönstren och ändra i ett av dem. Det andra visar ändringen när du går tillbaka till fliken.
+   Verktyget skriver ut appens egen adress. Med appens id i stället för en e-postadress sparas filen som en ny version.
+3. Prova med två konton: bjud in det andra kontot enligt stegen ovan, öppna appens adress i båda fönstren och ändra i ett av dem. Det andra visar ändringen när du går tillbaka till fliken.
+4. Ladda ned appen från verkstaden (*Ladda ned*). Kör `npm run build` först, så att `standalone.html` finns i `apps/runtime/dist`, och starta runtime med `npm run preview -w @pailo/runtime`, eftersom `npm run dev` inte bygger den fristående filen.
 
 Exemplen finns i `packages/schema/examples/`: `drop.json` och `matschema.json` är provexempel, och `alla-byggstenar.json` använder varje byggsten.

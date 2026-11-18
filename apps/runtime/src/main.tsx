@@ -5,7 +5,7 @@ import App from './App.tsx'
 import { createSupabaseApi, readSupabaseConfig } from './api.ts'
 import { captureInvite } from './invite.ts'
 
-captureInvite(window.location, window.sessionStorage, (url) => window.history.replaceState(null, '', url))
+captureInvite(window.location, window.localStorage, (url) => window.history.replaceState(null, '', url))
 
 const config = readSupabaseConfig(import.meta.env, window.location.origin)
 

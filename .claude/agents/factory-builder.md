@@ -49,7 +49,7 @@ was addressed.
 
 - No per-app code, routes or tables. App data goes in `records` (jsonb).
 - App changes happen only as validated JSON Patch → new row in `app_versions`. Everything can be undone.
-- Every new table: RLS per household plus pgTAP tests proving household A can't read or write B's data.
+- Every new table: RLS per app membership plus pgTAP tests proving a person who is not a member of an app can't read or write its data.
 - Never raw HTML (`dangerouslySetInnerHTML`), sanitize links, Claude key never in client code.
 - UI copy in Swedish with no tech words (no "databas", "server", "deploy", "hosting", "git").
 - Schema changes bump `schemaVersion` with a migration in `packages/schema/src/migrate.ts`.

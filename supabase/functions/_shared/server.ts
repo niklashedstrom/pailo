@@ -48,7 +48,6 @@ export function isLocal(): boolean {
 
 export interface LoadedApp {
   id: string
-  householdId: string
   version: number
   summary: string | null
   description: AppDescription
@@ -56,7 +55,7 @@ export interface LoadedApp {
 
 /** The app with its latest version, lifted to the current schema, or null. */
 export async function loadApp(db: SupabaseClient, appId: string, version?: number): Promise<LoadedApp | null> {
-  const { data: app, error } = await db.from('apps').select('id, household_id').eq('id', appId).maybeSingle()
+  const { data: app, error } = await db.from('apps').select('id').eq('id', appId).maybeSingle()
   if (error && error.code !== '22P02') throw error
   if (!app) return null
   let query = db.from('app_versions').select('version, description, summary').eq('app_id', appId)
@@ -68,19 +67,20 @@ export async function loadApp(db: SupabaseClient, appId: string, version?: numbe
   if (!migrated.success) throw new Error(`Version ${row.version} of app ${appId} does not validate`)
   return {
     id: app.id,
-    householdId: app.household_id,
     version: row.version,
     summary: row.summary,
     description: migrated.data,
   }
 }
 
-export async function isMember(db: SupabaseClient, householdId: string, userId: string): Promise<boolean> {
+/** True when the person owns the app. Only the owner may change, undo, restore or download it. */
+export async function isOwner(db: SupabaseClient, appId: string, userId: string): Promise<boolean> {
   const { data, error } = await db
-    .from('members')
+    .from('app_members')
     .select('user_id')
-    .eq('household_id', householdId)
+    .eq('app_id', appId)
     .eq('user_id', userId)
+    .eq('role', 'owner')
     .maybeSingle()
   if (error && error.code !== '22P02') throw error
   return data !== null

@@ -11,8 +11,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "npm run dev -w @pailo/runtime",
-    "build": "npm run build -w @pailo/runtime",
+    "dev": "npm run icons -w @pailo/scripts && npm run dev -w @pailo/runtime",
+    "build": "npm run icons -w @pailo/scripts && npm run build -w @pailo/runtime",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "openspec": "openspec",
@@ -20,7 +20,8 @@
     "factory:board": "python3 -m http.server 8765 -d factory",
     "dev:app": "npm run dev:app -w @pailo/scripts --",
     "test:integration": "npm run test:integration -w @pailo/scripts",
-    "eval:build": "npm run eval:build -w @pailo/scripts --"
+    "eval:build": "npm run eval:build -w @pailo/scripts --",
+    "check:m2b-move": "./scripts/check-m2b-move.sh"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.16.0"

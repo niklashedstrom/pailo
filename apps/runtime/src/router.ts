@@ -1,25 +1,35 @@
 import { useEffect, useState } from 'react'
 
-// A deliberately small router: the only addresses are the household page and
-// an app, optionally with a view. Every app uses the same two patterns; there
-// are never routes per app. /inbjudan is handled once at start-up (invite.ts).
+// A deliberately small router with three kinds of address, the same for
+// every app; there are never routes per app:
+//   /                       Pailo, the workshop: my apps
+//   /app/<id>[/<view>]      an app being changed in the workshop (its owner)
+//   /a/<slug>[/<view>]      the app on its own address, without Pailo
+// Invite links (/a/<slug>/inbjudan#<secret>) are read once at start-up (invite.ts).
 
-export type Route = { kind: 'home' } | { kind: 'app'; appId: string; viewId?: string }
+export type Route =
+  | { kind: 'home' }
+  | { kind: 'workshop'; appId: string; viewId?: string }
+  | { kind: 'app'; slug: string; viewId?: string }
 
 const SEGMENT = /^[A-Za-z0-9-]+$/
 
 export function parseRoute(pathname: string): Route {
   const parts = pathname.split('/').filter((part) => part !== '')
-  if (parts[0] === 'app' && parts.length >= 2 && parts.length <= 3 && parts.slice(1).every((p) => SEGMENT.test(p))) {
-    return parts[2] ? { kind: 'app', appId: parts[1], viewId: parts[2] } : { kind: 'app', appId: parts[1] }
+  const valid = parts.length >= 2 && parts.length <= 3 && parts.slice(1).every((p) => SEGMENT.test(p))
+  if (valid && parts[0] === 'app') {
+    return parts[2] ? { kind: 'workshop', appId: parts[1], viewId: parts[2] } : { kind: 'workshop', appId: parts[1] }
+  }
+  if (valid && parts[0] === 'a') {
+    return parts[2] ? { kind: 'app', slug: parts[1], viewId: parts[2] } : { kind: 'app', slug: parts[1] }
   }
   return { kind: 'home' }
 }
 
 export function routePath(route: Route): string {
   if (route.kind === 'home') return '/'
-  const app = `/app/${encodeURIComponent(route.appId)}`
-  return route.viewId ? `${app}/${encodeURIComponent(route.viewId)}` : app
+  const base = route.kind === 'workshop' ? `/app/${encodeURIComponent(route.appId)}` : `/a/${encodeURIComponent(route.slug)}`
+  return route.viewId ? `${base}/${encodeURIComponent(route.viewId)}` : base
 }
 
 const CHANGE = 'pailo:navigate'

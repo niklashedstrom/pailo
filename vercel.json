@@ -6,6 +6,10 @@
   "outputDirectory": "apps/runtime/dist",
   "rewrites": [
     {
+      "source": "/a/:slug/manifest.webmanifest",
+      "destination": "https://edtgepobtmyogdmaphfm.supabase.co/functions/v1/app-manifest?slug=:slug"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

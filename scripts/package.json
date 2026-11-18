@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:integration": "INTEGRATION=1 vitest run",
-    "eval:build": "tsx src/eval-build.ts"
+    "eval:build": "tsx src/eval-build.ts",
+    "icons": "tsx src/render-icons.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.4.0",
@@ -17,7 +18,9 @@
     "@supabase/supabase-js": "2.118.0"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "2.6.2",
     "@types/node": "^24.19.2",
+    "lucide-static": "1.66.0",
     "oxlint": "^1.89.0",
     "tsx": "4.23.15",
     "typescript": "~7.0.2",

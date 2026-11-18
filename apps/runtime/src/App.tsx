@@ -1,40 +1,32 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
-import type { Household, PailoApi } from './api'
-import { clearInvite, pendingInvite } from './invite'
-import HouseholdPage from './pages/HouseholdPage'
-import InviteProblem from './pages/InviteProblem'
-import NameHousehold from './pages/NameHousehold'
+import type { PailoApi } from './api'
+import MyApps from './pages/MyApps'
 import SignIn from './pages/SignIn'
-import { useRoute } from './router'
+import { routePath, useRoute } from './router'
 
 // Only loaded when someone opens an app, so the sign-in page stays small.
-const AppScreen = lazy(() => import('./runtime/AppScreen'))
+const WorkshopApp = lazy(() => import('./workshop/WorkshopApp'))
+const AppHome = lazy(() => import('./standalone/AppHome'))
 
 interface Props {
   api: PailoApi
+  /** Where an invite waits while the person signs in (localStorage in the browser). */
   storage?: Pick<Storage, 'getItem' | 'removeItem'>
+  /** Injected in tests so calendars have a fixed "today". */
+  now?: Date
 }
 
-type View =
-  | { kind: 'loading' }
-  | { kind: 'signed-out' }
-  | { kind: 'error' }
-  | { kind: 'invite-problem' }
-  | { kind: 'no-household' }
-  | { kind: 'household'; userId: string; households: Household[]; selectedId: string }
-
 /**
- * Signed out → (invite) → no household → household, and from there an app
- * at /app/<id>/<view>. The invite link is read once at start-up.
+ * Two places in one runtime: an app on its own address (/a/<slug>), which
+ * shows only the app and handles its own sign-in, and Pailo, the workshop
+ * (/ and /app/<id>), where people build and change their apps.
  */
-export default function App({ api, storage = window.sessionStorage, now }: Props & { now?: Date }) {
+export default function App({ api, storage = window.localStorage, now }: Props) {
   const route = useRoute()
   const [userId, setUserId] = useState<string | null | undefined>(undefined)
-  const [reload, setReload] = useState(0)
-  // The result of loading for one (user, reload) pair. While it belongs to
-  // an older pair, the page shows "loading".
-  const [loaded, setLoaded] = useState<{ key: string; view: View } | undefined>(undefined)
-  const key = `${userId}:${reload}`
+  // Bumped on every sign-in or sign-out, so nothing loaded for someone else is shown.
+  const [session, setSession] = useState(0)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -45,8 +37,7 @@ export default function App({ api, storage = window.sessionStorage, now }: Props
     const unsubscribe = api.onUserChange((id) => {
       if (!active) return
       setUserId(id)
-      // Never show what was loaded for an earlier sign-in.
-      setReload((n) => n + 1)
+      setSession((n) => n + 1)
     })
     return () => {
       active = false
@@ -54,114 +45,63 @@ export default function App({ api, storage = window.sessionStorage, now }: Props
     }
   }, [api])
 
-  useEffect(() => {
-    if (userId === undefined || userId === null) return
-
-    let active = true
-    const show = (view: View) => active && setLoaded({ key, view })
-    ;(async () => {
-      let joined: string | undefined
-      const token = pendingInvite(storage)
-      if (token !== null) {
-        const result = await api.acceptInvite(token)
-        clearInvite(storage)
-        if (!result.ok) {
-          show({ kind: 'invite-problem' })
-          return
-        }
-        joined = result.householdId
-      }
-
-      const households = await api.listHouseholds()
-      if (households.length === 0) {
-        show({ kind: 'no-household' })
-      } else {
-        const selected = households.find((h) => h.id === joined) ?? households[0]
-        show({ kind: 'household', userId, households, selectedId: selected.id })
-      }
-    })().catch(() => show({ kind: 'error' }))
-
-    return () => {
-      active = false
-    }
-  }, [api, storage, userId, key])
-
-  const view: View =
-    userId === undefined
-      ? { kind: 'loading' }
-      : userId === null
-        ? { kind: 'signed-out' }
-        : loaded?.key === key
-          ? loaded.view
-          : { kind: 'loading' }
-
-  const refresh = useCallback(() => setReload((n) => n + 1), [])
   const signOut = useCallback(() => {
-    api.signOut().catch(() => setLoaded({ key, view: { kind: 'error' } }))
-  }, [api, key])
+    api.signOut().catch(() => setError(true))
+  }, [api])
 
-  // Updates the name in place instead of reloading: a reload would pick the
-  // first household, and a new name can change the order.
-  const renamed = useCallback(
-    (householdId: string, name: string) =>
-      setLoaded((current) => {
-        if (current === undefined || current.view.kind !== 'household') return current
-        const households = current.view.households
-          .map((h) => (h.id === householdId ? { ...h, name } : h))
-          .sort((a, b) => a.name.localeCompare(b.name, 'sv'))
-        return { ...current, view: { ...current.view, households } }
-      }),
-    [],
-  )
+  const loading = <p aria-busy="true">Laddar …</p>
 
-  return <main className="app">{render()}</main>
-
-  function render() {
-    switch (view.kind) {
-      case 'loading':
-        return <p aria-busy="true">Laddar …</p>
-      case 'signed-out':
-        return <SignIn api={api} invited={pendingInvite(storage) !== null} />
-      case 'error':
-        return (
-          <>
-            <h1>Något gick fel</h1>
-            <p>Försök igen om en liten stund.</p>
-            <button type="button" onClick={refresh}>
-              Försök igen
-            </button>
-          </>
-        )
-      case 'invite-problem':
-        return <InviteProblem onContinue={refresh} />
-      case 'no-household':
-        return <NameHousehold api={api} onCreated={refresh} onSignOut={signOut} />
-      case 'household':
-        if (route.kind === 'app') {
-          return (
-            <Suspense fallback={<p aria-busy="true">Laddar …</p>}>
-              <AppScreen
-                api={api}
-                appId={route.appId}
-                viewId={route.viewId}
-                userId={view.userId}
-                households={view.households}
-                now={now}
-              />
-            </Suspense>
-          )
-        }
-        return (
-          <HouseholdPage
+  if (route.kind === 'app') {
+    return (
+      <main className="app">
+        <Suspense fallback={loading}>
+          <AppHome
+            key={`${session}:${route.slug}`}
             api={api}
-            currentUserId={view.userId}
-            households={view.households}
-            selectedId={view.selectedId}
-            onSelect={(id) => setLoaded({ key, view: { ...view, selectedId: id } })}
-            onRenamed={renamed}
+            slug={route.slug}
+            viewId={route.viewId}
+            userId={userId}
             onSignOut={signOut}
+            storage={storage}
+            now={now}
           />
-        )
+        </Suspense>
+      </main>
+    )
+  }
+
+  return <main className="app">{workshop()}</main>
+
+  function workshop() {
+    if (error) {
+      return (
+        <>
+          <h1>Något gick fel</h1>
+          <p>Försök igen om en liten stund.</p>
+          <button type="button" onClick={() => setError(false)}>
+            Försök igen
+          </button>
+        </>
+      )
     }
+    if (userId === undefined) return loading
+    if (userId === null) {
+      return (
+        <SignIn
+          api={api}
+          title="Pailo"
+          intro="Logga in med din e-postadress. Du får en länk i mejlet, inget lösenord behövs."
+          returnTo={routePath(route)}
+        />
+      )
+    }
+    if (route.kind === 'workshop') {
+      return (
+        <Suspense fallback={loading}>
+          <WorkshopApp key={session} api={api} appId={route.appId} viewId={route.viewId} userId={userId} now={now} />
+        </Suspense>
+      )
+    }
+    return <MyApps key={session} api={api} onSignOut={signOut} />
   }
 }

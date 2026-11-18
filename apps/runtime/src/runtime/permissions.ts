@@ -9,8 +9,8 @@ export interface Permissions {
 
 /**
  * What the person may do with records in a collection, mirroring the RLS
- * policies on `records` (M2). Only hides buttons: the database decides.
- * - admin: everything
+ * policies on `records`. Only hides buttons: the database decides.
+ * - the app's owner: everything
  * - edit: create, change and delete all records
  * - add: create, and change own records (not delete)
  * - read: nothing
@@ -21,7 +21,7 @@ export function permissions(
   createdBy: string | null,
   userId: string,
 ): Permissions {
-  if (role === 'admin') return { canCreate: true, canEdit: true, canDelete: true }
+  if (role === 'owner') return { canCreate: true, canEdit: true, canDelete: true }
   switch (access) {
     case 'edit':
       return { canCreate: true, canEdit: true, canDelete: true }
